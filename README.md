@@ -8,10 +8,10 @@
 
 | คนที่ | ชื่อ | รับผิดชอบ |
 |-------|------|-----------|
-| 1 | TBD | **Models** – User, Member, Staff, Coupon, Ticket |
-| 2 | TBD | **Models** – Park, Zone, Cage, Dino, Food, Vehicle, Driver |
-| 3 | TBD | **Models + Services** – Booking, Trip, Round, Payment + BookingService, PaymentService |
-| 4 | TBD | **Controllers + Reports + Utils** – CLI controllers, Report generation, Validators |
+| 1 | POOH | **Models** – User, Member, Staff, Coupon, Ticket |
+| 2 | NICE | **Models** – Park, Zone, Cage, Dino, Food, Vehicle, Driver |
+| 3 | FUJI | **Models + Services** – Booking, Trip, Round, Payment + BookingService, PaymentService |
+| 4 | PEEM | **Controllers + Reports + Utils** – CLI controllers, Report generation, Validators |
 
 ---
 
