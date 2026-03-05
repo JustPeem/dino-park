@@ -190,7 +190,7 @@ class Ranger(Staff):
 
 
 class TicketStaff(Staff):
-    """Ticket staff — handles visitor check-in and coupon issuance."""
+    """Ticket staff — handles visitor check-in and feeding ticket issuance."""
 
     def __init__(self, staff_id: int, name: str):
         super().__init__(staff_id, name)
@@ -207,18 +207,30 @@ class TicketStaff(Staff):
         print(f"[TicketStaff {self.name}] Checking in ticket: {ticket_id}")
         return park.check_in(ticket_id)
 
-    def add_food_coupon(self, member_id: str, park) -> str:
+    def add_feeding_ticket(self, member_id: str, park) -> str:
         """
-        Issue a food coupon to a member after their visit.
-        Delegates to Park.issue_food_coupon(member_id).
-        Used in sequence: addFoodCoupon(memberId) → Park → Member → Ticket → Coupon
+        Issue a feeding ticket (type="feeding", price=150) to a member
+        after they have checked in (ticket.is_used == True).
+
+        Delegates to Park.issue_feeding_ticket(member_id).
+
+        Flow:
+          TicketStaff → addFeedingTicket(memberId)
+          Park → issueFeedingTicket(memberId)
+          Park → Ticket.check_is_used()   [must be True]
+          Park → Ticket.create(..., "feeding")
+
+        Returns a status string:
+          - "Feeding ticket issued successfully"
+          - "Member not found"
+          - "Ticket not yet used"
         """
         if not isinstance(member_id, str) or not member_id.strip():
             raise ValueError("member_id must be a non-empty string.")
         if park is None:
             raise ValueError("park must not be None.")
-        print(f"[TicketStaff {self.name}] Issuing food coupon for Member {member_id}.")
-        return park.issue_food_coupon(member_id)
+        print(f"[TicketStaff {self.name}] Issuing feeding ticket for Member {member_id}.")
+        return park.issue_feeding_ticket(member_id)
 
     def __repr__(self):
         return f"TicketStaff(id={self.staff_id}, name={self.name})"
