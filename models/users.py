@@ -6,8 +6,6 @@ if TYPE_CHECKING:
     from coupon import Coupon
 
 MEMBER_DISCOUNT_RATE = 0.10
-GROUP_DISCOUNT_RATE = 0.05
-GROUP_DISCOUNT_MIN_SEATS = 10
 
 
 class User(ABC):
@@ -58,18 +56,16 @@ class Member(User):
             raise TypeError("coupon must be a Coupon instance.")
         self.__coupons.append(coupon)
 
-    def use_coupon(self, coupon_code: str, base_price: float) -> float:
+    def use_coupon(self, coupon_code: str) -> float:
         """
         Attempt to use a coupon by code and return the discount amount.
         Marks the coupon as used if valid.
 
         Returns discount amount (float) if successful, 0.0 if not found or invalid.
-        Used in sequence: UseCoupon(coupon_code, basePrice) → discount
+        Used in sequence: UseCoupon(coupon_code) → discount
         """
         if not isinstance(coupon_code, str) or not coupon_code.strip():
             raise ValueError("coupon_code must be a non-empty string.")
-        if not isinstance(base_price, (int, float)) or base_price < 0:
-            raise ValueError("base_price must be a non-negative number.")
 
         for coupon in self.__coupons:
             if coupon.coupon_code == coupon_code:
@@ -83,35 +79,27 @@ class Member(User):
         print(f"Coupon '{coupon_code}' not found.")
         return 0.0
 
-    def calculate_discount(self, base_price: float, seats: int = 1, discount: float = 0.0) -> float:
+    def calculate_discount(self, base_price: float, discount: float = 0.0) -> float:
         """
-        Calculate the final price after applying all applicable discounts:
+        Calculate the final price after applying Member discount and coupon discount:
           1. Member discount: 10%
-          2. Group discount: 5% if seats >= 10
-          3. Coupon discount: fixed amount passed in from use_coupon()
+          2. Coupon discount: fixed amount passed in from use_coupon()
 
-        discount is the coupon discount amount already obtained from use_coupon().
+        Note: Group discount (5% for seats >= 10) is handled by Booking.calculate_final_price()
+        since seat count is Booking's responsibility, not Member's.
+
         Returns the final discounted price (minimum 0.0).
-
-        Used in sequence: calculateDiscount(basePrice) after UseCoupon()
+        Used in sequence: calculateDiscount(basePrice) → discount → Booking.calculateFinalPrice()
         """
         if not isinstance(base_price, (int, float)) or base_price < 0:
             raise ValueError("base_price must be a non-negative number.")
-        if not isinstance(seats, int) or seats < 1:
-            raise ValueError("seats must be a positive integer.")
         if not isinstance(discount, (int, float)) or discount < 0:
             raise ValueError("discount must be a non-negative number.")
 
-        price = base_price
-
         # 1. Member discount (10%)
-        price = price * (1 - MEMBER_DISCOUNT_RATE)
+        price = base_price * (1 - MEMBER_DISCOUNT_RATE)
 
-        # 2. Group discount (5% if >= 10 seats)
-        if seats >= GROUP_DISCOUNT_MIN_SEATS:
-            price = price * (1 - GROUP_DISCOUNT_RATE)
-
-        # 3. Coupon discount (fixed amount from use_coupon)
+        # 2. Coupon discount (fixed amount from use_coupon)
         price = price - discount
 
         return max(0.0, price)
