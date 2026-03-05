@@ -1,44 +1,30 @@
-from datetime import datetime
-
-_booking_counter = {}
-_trip_counter = {}
-
-from datetime import datetime
-
-_booking_counter = {}
-
+counter_booking = 1
+counter_ticket = 1
+counter_trip = 1
+counter_round = 1
+counter_payment = 1
 def generate_booking_id():
-
-    today = datetime.now().strftime("%Y%m%d")
-
-    if today not in _booking_counter:
-        _booking_counter[today] = 1
-    else:
-        _booking_counter[today] += 1
-
-    counter = _booking_counter[today]
-
-    return f"B-{today}-{counter:03d}"
-
-
-trip_counter = 1
-
+    global counter_booking
+    cid = f"B-{counter_booking:03}"
+    counter_booking += 1
+    return cid
+def generate_ticket_id():
+    global counter_ticket
+    cid = f"T-{counter_ticket:03}"
+    counter_ticket += 1
+    return cid
 def generate_trip_id():
-    global trip_counter
-    trip_id = f"T-{trip_counter:03d}"
-    trip_counter += 1
-    return trip_id
-
-_payment_counter = {}
-
-def generate_payment_id() -> str:
-    today = datetime.now().strftime("%Y%m%d")
-
-    if today not in _payment_counter:
-        _payment_counter[today] = 1
-    else:
-        _payment_counter[today] += 1
-
-    number = _payment_counter[today]
-
-    return f"P-{today}-{number:03d}"
+    global counter_trip
+    cid = f"TR-{counter_trip:03}"
+    counter_trip += 1
+    return cid
+def generate_round_id():
+    global counter_round
+    cid = f"R-{counter_round:03}"
+    counter_round += 1
+    return cid
+def generate_payment_id():
+    global counter_payment
+    cid = f"P-{counter_payment:03}"
+    counter_payment += 1
+    return cid

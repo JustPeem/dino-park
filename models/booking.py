@@ -1,164 +1,236 @@
 """
-models/booking.py
-Booking entity – core transaction object.
-
-States:
-PENDING → CONFIRMED → CANCELLED
+Booking entity – represents a visitor booking
 """
 
 from __future__ import annotations
-from datetime import datetime
-from typing import List, TYPE_CHECKING
-
+from typing import TYPE_CHECKING, List
 
 from utils.id_generator import generate_booking_id
-from utils.exceptions import BookingAlreadyCancelledException
 
 if TYPE_CHECKING:
     from .users import User
     from .round import Round
-    from .ticket import Ticket
-    from .payment import Payment, PaymentMethod
     from .trip import Trip
-
-
-FEEDING_ADDON = 150.0
+    from .payment import Payment, PaymentMethod
+    from .ticket import Ticket
 
 
 class Booking:
     """
-    Represents a visitor's park reservation.
-    Owns Tickets (Composition) and references User and Round.
+    Represents a booking made by a user for a specific round and trip.
+    Handles: seat reservation, pricing, payment transaction, ticket creation.
     """
 
-    def __init__(self, user: "User", round: "Round", trip: "Trip", seats: int,with_feeding: bool = False):
+    def __init__(
+        self,
+        user: "User",
+        round_ref: "Round",
+        trip: "Trip",
+        seats: int,
+        base_price: float
+    ):
+
         self.__booking_id = generate_booking_id()
-        self.__booking_date = datetime.now()
+
+        # relationships
         self.__user = user
-        self.__round = round
-        self.__seats = seats
+        self.__round = round_ref
         self.__trip = trip
-        self.__total_price = 0
+
+        # booking details
+        self.__seats = seats
+        self.__base_price = base_price
+        self.__total_price = base_price * seats
+        self.__status = "PENDING"    # PENDING → PAID → CANCELLED
+
+        # tickets & payment records
         self.__tickets: List["Ticket"] = []
-        self.__status = "PENDING"
-        self.__payment: "Payment | None" = None
-        self.__with_feeding = with_feeding
+        self.__payments: List["Payment"] = []
 
-    # ───── Properties ─────
+        #feeding ticket
+        self.__feeding_tickets = 0
+        self.__feeding_ticket_price = 150
 
+
+    # ─────────────────────────────
+    # Properties
+    # ─────────────────────────────
     @property
-    def booking_id(self) -> str:
+    def booking_id(self):
         return self.__booking_id
 
     @property
-    def status(self) -> str:
-        return self.__status
+    def user(self):
+        return self.__user
 
     @property
-    def total_price(self) -> float:
-        return self.__total_price
-
-    @property
-    def round(self) -> "Round":
+    def round(self):
         return self.__round
 
     @property
-    def tickets(self) -> List["Ticket"]:
-        return list(self.__tickets)
+    def trip(self):
+        return self.__trip
 
-    # ───── Ticket Generation ─────
+    @property
+    def seats(self):
+        return self.__seats
 
-    def create_tickets(self, price_per_seat: float) -> List["Ticket"]:
-        from .ticket import Ticket
+    @property
+    def base_price(self):
+        return self.__base_price
 
-        for seat in range(1, self.__seats + 1):
-
-            if self.__with_feeding:
-                ticket_type = Ticket.FEEDING
-                price = price_per_seat + FEEDING_ADDON
-            else:
-                ticket_type = Ticket.STANDARD
-                price = price_per_seat
-
-            ticket = Ticket(
-                price=price,
-                round_=self.__round,
-                seat_number=seat,
-                ticket_type=ticket_type,
-            )
-
-            self.__tickets.append(ticket)
-
-        return self.__tickets
-        
-    # ───── calcualte_final_price ─────
-    def calculate_final_price(self, discount: float) -> float:
-
-        base_price = self.__round.price_per_seat * self.__seats
-
-        
-
-        if self.__with_feeding:
-            base_price += FEEDING_ADDON * self.__seats
-
-        final_price = base_price - (base_price * discount / 100)
-
-        if final_price < 0:
-            final_price = 0
-
-        self.__total_price = final_price
+    @property
+    def total_price(self):
         return self.__total_price
 
-    # ───── Payment / Transaction ─────
+    @property
+    def status(self):
+        return self.__status
+
+    @property
+    def tickets(self):
+        return self.__tickets
+
+    # ─────────────────────────────
+    # Price Calculation
+    # ─────────────────────────────
+
+    def calculate_final_price(self,member_discount_percent: float,coupon_discount: float = 0) -> float:
+        """
+    Calculate final price including:
+    - member % discount
+    - group discount (5% if seats >= 10)
+    - feeding ticket add-ons
+    - coupon (fixed amount)
+        """
+
+        # base seats + feeding tickets
+        normal_price = self.__base_price * self.__seats
+        feeding_price = self.__feeding_ticket_price * self.__feeding_tickets
+
+        total_before_discount = normal_price + feeding_price
+
+        # member discount in %
+        member_discount_value = (member_discount_percent / 100) * total_before_discount
+
+        # group discount (≥10 seats)
+        group_discount_value = 0
+        if self.__seats >= 10:
+            group_discount_value = 0.05 * total_before_discount
+
+        # total discount
+        total_discount = member_discount_value + group_discount_value + coupon_discount
+
+        # final price cannot go below 0
+        final_price = max(0, total_before_discount - total_discount)
+
+        # update booking
+        self.__total_price = final_price
+
+        return final_price
+
+
+    # ─────────────────────────────
+    # Payment Transaction (Not Pricing)
+    # ─────────────────────────────
 
     def create_payment(self, method: "PaymentMethod") -> "Payment":
         """
-        Create a payment (transaction) for this booking.
+        Creates a payment record (transaction), not pricing logic.
         """
         from .payment import Payment
 
         payment = Payment(
-            booking=self,
             amount=self.__total_price,
-            method=method
+            booking=self,
+            payment_method=method
         )
 
-        self.__payment = payment
+        self.__payments.append(payment)
         return payment
 
-    # ───── Lifecycle ─────
+    # ─────────────────────────────
+    # Confirm Booking
+    # ─────────────────────────────
 
-    def confirm_booking(self) -> None:
+    def confirm_booking(self):
         """
-        Confirm booking after successful payment.
+        Called when payment is successful.
+        Generates tickets and marks booking as PAID.
         """
-        if self.__status != "PENDING":
-            raise ValueError(f"Cannot confirm booking in state {self.__status}")
+        if self.__status == "PAID":
+            raise Exception("Booking already paid.")
 
-        self.__status = "CONFIRMED"
+        if self.__status == "CANCELLED":
+            raise Exception("Cannot confirm: booking was cancelled.")
 
-    def cancel_booking(self) -> None:
+        self.__status = "PAID"
+
+        # generate tickets based on seats
+        from .ticket import Ticket
+        for i in range(self.__seats):
+            ticket = Ticket(
+                round_ref=self.__round,
+                trip=self.__trip,
+                price=self.__base_price,
+                seat_number=i + 1
+            )
+            self.__tickets.append(ticket)
+
+        return self.__tickets
+
+    # ─────────────────────────────
+    # Cancel Booking
+    # ─────────────────────────────
+
+    def cancel(self):
         """
-        Cancel booking and cancel all tickets.
+        Cancel booking, release seats, refund done elsewhere (BookingService).
         """
         if self.__status == "CANCELLED":
-            raise BookingAlreadyCancelledException(
-                f"Booking {self.__booking_id} already cancelled"
-            )
+            raise Exception("Booking already cancelled.")
 
-        for ticket in self.__tickets:
-            ticket.cancel()
+        if self.__status == "PAID":
+            raise Exception("Cannot cancel: booking already paid. Use refund().")
 
         self.__status = "CANCELLED"
 
-    
+        # release reserved seats
+        self.__trip.cancel_reservation(self.__seats)
 
-    # ───── Debug ─────
+    # ─────────────────────────────
+    # Refund
+    # ─────────────────────────────
 
-    def __repr__(self) -> str:
+    def refund(self):
+        """
+        Refund booking (after payment). PaymentService handles the logic.
+        Only update booking & trip state.
+        """
+        if self.__status != "PAID":
+            raise Exception("Refund failed: booking not paid.")
+
+        self.__status = "REFUNDED"
+
+        # refund seats
+        self.__trip.cancel_reservation(self.__seats)
+
+    # ─────────────────────────────
+    # Ticket Access
+    # ─────────────────────────────
+
+    def get_ticket(self, ticket_id: str) -> "Ticket":
+        for t in self.__tickets:
+            if t.ticket_id == ticket_id:
+                return t
+        return None
+
+    # ─────────────────────────────
+    # Debug
+    # ─────────────────────────────
+
+    def __repr__(self):
         return (
-            f"Booking({self.__booking_id}, "
-            f"user={self.__user.name}, "
-            f"seats={self.__seats}, "
-            f"status={self.__status})"
+            f"Booking({self.__booking_id}, seats={self.__seats}, "
+            f"total={self.__total_price}, status={self.__status})"
         )

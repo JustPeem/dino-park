@@ -1,61 +1,87 @@
-from __future__ import annotations
-from datetime import datetime
-from typing import TYPE_CHECKING
+"""
+Payment entity – transaction record for a booking payment
+"""
 
+from __future__ import annotations
+from typing import TYPE_CHECKING
 from utils.id_generator import generate_payment_id
 
 if TYPE_CHECKING:
-    from .booking import Booking
-    from services.payment_service import PaymentMethod
+    from models.booking import Booking
 
+
+class PaymentMethod:
+    """
+    Interface for payment methods (cash / QR)
+    """
+
+    def pay(self, amount: float) -> bool:
+        raise NotImplementedError("pay() must be implemented in subclasses")
+
+
+class CashPayment(PaymentMethod):
+    """
+    Cash payment – always succeeds
+    """
+
+    def pay(self, amount: float) -> bool:
+        print(f"[CASH] Paying {amount} baht")
+        return True
+
+
+class QRPayment(PaymentMethod):
+    """
+    QR payment – simulate scanning process
+    """
+
+    def pay(self, amount: float) -> bool:
+        print(f"[QR] Scanning QR for {amount} baht")
+        return True     # สามารถเปลี่ยนเป็น random fail ได้ถ้าต้องการ
+        
 
 class Payment:
     """
-    Payment = Transaction / Receipt
-    Created AFTER successful payment.
+    Represents a payment transaction record
     """
 
-    def __init__(self,booking: "Booking",payment_method: "PaymentMethod",amount: float,discount: float = 0.0):
-        self._payment_id = generate_payment_id()
-        self._booking = booking
-        self._payment_method = payment_method
-        self._amount = amount
-        self._discount = discount
-        self._payment_date = datetime.now()
-        self._status = "COMPLETED"
+    def __init__(self, amount: float, booking: "Booking", payment_method: PaymentMethod):
+
+        self.__payment_id = generate_payment_id()
+        self.__amount = amount
+        self.__booking = booking
+        self.__method = payment_method
+        self.__status = "Pending"      # Pending → Success/Failed
+
+    # Properties
+    @property
+    def payment_id(self):
+        return self.__payment_id
 
     @property
-    def payment_id(self) -> str:
-        return self._payment_id
+    def amount(self):
+        return self.__amount
 
     @property
-    def amount(self) -> float:
-        return self._amount
+    def booking(self):
+        return self.__booking
 
     @property
-    def discount(self) -> float:
-        return self._discount
+    def method(self):
+        return self.__method
 
     @property
-    def status(self) -> str:
-        return self._status
+    def status(self):
+        return self.__status
 
-    @property
-    def payment_method(self) -> str:
-        return self._payment_method.get_method_name()
+    # Execute payment
+    def pay(self, amount: float) -> bool:
+        return self.__method.pay(amount)
 
-    def refund(self) -> float:
-        """
-        Refund money from this transaction
-        """
-        if self._status != "COMPLETED":
-            raise ValueError("Cannot refund a non-completed payment")
-
-        refund_amount = round(self._amount * 0.5, 2)
-        self._status = "REFUNDED"
-
-        print(f"[Refund] {refund_amount}฿ for Payment {self._payment_id}")
-        return refund_amount
+    def updateStatus(self, new_status: str):
+        self.__status = new_status
 
     def __repr__(self):
-        return f"Payment({self._payment_id}, {self._amount}฿, {self._status})"
+        return (
+            f"Payment({self.__payment_id}, amount={self.__amount}, "
+            f"status={self.__status})"
+        )
