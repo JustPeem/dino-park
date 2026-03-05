@@ -29,6 +29,8 @@ def _validate_trip_time(start_time: datetime, end_time: datetime) -> None:
         raise TypeError("start_time and end_time must be datetime instances.")
     if start_time >= end_time:
         raise ValueError("start_time must be before end_time.")
+    if start_time < datetime.now():
+        raise ValueError("start_time must not be in the past.")
     if end_time - start_time != TRIP_DURATION:
         raise ValueError(
             f"Trip duration must be exactly 1 hour. Got {end_time - start_time}."

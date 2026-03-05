@@ -1,4 +1,4 @@
-from abc import ABC
+from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 import re
 
@@ -35,8 +35,9 @@ class User(ABC):
     def user_type(self) -> str:
         return self.__user_type
 
+    @abstractmethod
     def __repr__(self):
-        return f"{self.__class__.__name__}(name={self.__name}, phone={self.__phone_number})"
+        pass
 
 
 class Member(User):
@@ -57,10 +58,13 @@ class Member(User):
             raise TypeError("coupon must be a Coupon instance.")
         self.__coupons.append(coupon)
 
-    def use_coupon(self, coupon_code: str, base_price: float) -> bool:
+    def use_coupon(self, coupon_code: str, base_price: float) -> float:
         """
-        Attempt to use a coupon by code.
-        Returns True if coupon was successfully applied, False otherwise.
+        Attempt to use a coupon by code and return the discount amount.
+        Marks the coupon as used if valid.
+
+        Returns discount amount (float) if successful, 0.0 if not found or invalid.
+        Used in sequence: UseCoupon(coupon_code, basePrice) → discount
         """
         if not isinstance(coupon_code, str) or not coupon_code.strip():
             raise ValueError("coupon_code must be a non-empty string.")
@@ -70,31 +74,33 @@ class Member(User):
         for coupon in self.__coupons:
             if coupon.coupon_code == coupon_code:
                 if coupon.is_valid():
-                    discounted_price = base_price - coupon.discount_amount
                     coupon.mark_used()
-                    print(f"Coupon '{coupon_code}' applied. Price: {base_price} -> {discounted_price:.2f}")
-                    return True
+                    print(f"Coupon '{coupon_code}' applied. Discount: {coupon.discount_amount:.2f}")
+                    return coupon.discount_amount
                 else:
                     print(f"Coupon '{coupon_code}' is invalid or already used.")
-                    return False
+                    return 0.0
         print(f"Coupon '{coupon_code}' not found.")
-        return False
+        return 0.0
 
-    def calculate_discount(self, base_price: float, seats: int = 1, coupon_code: str = None) -> float:
+    def calculate_discount(self, base_price: float, seats: int = 1, discount: float = 0.0) -> float:
         """
         Calculate the final price after applying all applicable discounts:
           1. Member discount: 10%
           2. Group discount: 5% if seats >= 10
-          3. Coupon discount: fixed amount from a valid coupon
+          3. Coupon discount: fixed amount passed in from use_coupon()
 
+        discount is the coupon discount amount already obtained from use_coupon().
         Returns the final discounted price (minimum 0.0).
+
+        Used in sequence: calculateDiscount(basePrice) after UseCoupon()
         """
         if not isinstance(base_price, (int, float)) or base_price < 0:
             raise ValueError("base_price must be a non-negative number.")
         if not isinstance(seats, int) or seats < 1:
             raise ValueError("seats must be a positive integer.")
-        if coupon_code is not None and (not isinstance(coupon_code, str) or not coupon_code.strip()):
-            raise ValueError("coupon_code must be a non-empty string or None.")
+        if not isinstance(discount, (int, float)) or discount < 0:
+            raise ValueError("discount must be a non-negative number.")
 
         price = base_price
 
@@ -105,12 +111,8 @@ class Member(User):
         if seats >= GROUP_DISCOUNT_MIN_SEATS:
             price = price * (1 - GROUP_DISCOUNT_RATE)
 
-        # 3. Coupon discount (fixed amount)
-        if coupon_code:
-            for coupon in self.__coupons:
-                if coupon.coupon_code == coupon_code and coupon.is_valid():
-                    price = price - coupon.discount_amount
-                    break
+        # 3. Coupon discount (fixed amount from use_coupon)
+        price = price - discount
 
         return max(0.0, price)
 
