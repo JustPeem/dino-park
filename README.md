@@ -95,20 +95,20 @@ dino_park/
 
 ## 🌐 FastAPI – REST Endpoints
 
-| Method | Endpoint | UC | Description |
-|--------|----------|----|-------------|
-| GET | `/bookings/availability` | UC7 | Check available seats |
-| POST | `/bookings/` | UC1+UC2 | Create booking + payment |
-| GET | `/bookings/{id}` | – | Get booking detail |
-| DELETE | `/bookings/{id}` | UC3 | Cancel & refund |
-| POST | `/staff/checkin` | UC4 | Ticket check-in |
-| POST | `/staff/coupon` | UC8 | Add coupon to member |
-| POST | `/trips/` | UC5 | Manager create trip |
-| POST | `/food/refill-request` | UC6 | Ranger refill request |
-| POST | `/food/approve-refill` | UC6 | Manager approve refill |
-| GET | `/reports/daily` | – | Daily visitor report |
-| GET | `/reports/food` | – | Food stock report |
-| GET | `/reports/zones` | – | Zone availability |
+| Method | Endpoint                 | UC      | Description              |
+|--------|--------------------------|---------|--------------------------|
+| GET    | `/bookings/availability` | UC7     | Check available seats    |
+| POST   | `/bookings/`             | UC1+UC2 | Create booking + payment |
+| GET    | `/bookings/{id}`         | –       | Get booking detail       |
+| DELETE | `/bookings/{id}`         | UC3     | Cancel & refund          |
+| POST   | `/staff/checkin`         | UC4     | Ticket check-in          |
+| POST   | `/staff/coupon`          | UC8     | Add coupon to member     |
+| POST   | `/trips/`                | UC5     | Manager create trip      |
+| POST   | `/food/refill-request`   | UC6     | Ranger refill request    |
+| POST   | `/food/approve-refill`   | UC6     | Manager approve refill   |
+| GET    | `/reports/daily`         | –       | Daily visitor report     |
+| GET    | `/reports/food`          | –       | Food stock report        |
+| GET    | `/reports/zones`         | –       | Zone availability        |
 
 ```bash
 # Start API server
@@ -125,23 +125,23 @@ uvicorn api.app:app --reload
 MCP exposes all 8 use cases as **AI-callable tools** for Claude Desktop, Cursor, or any MCP client.
 
 ### MCP Tools
-| Tool | UC | Description |
-|------|----|-------------|
-| `check_seat_availability` | UC7 | Check seats |
-| `create_booking` | UC1+UC2 | Full booking flow |
-| `cancel_booking` | UC3 | Cancel + refund |
-| `check_in_ticket` | UC4 | Check-in visitor |
-| `create_trip` | UC5 | Manager creates trip |
-| `request_food_refill` | UC6 | Ranger requests refill |
-| `approve_food_refill` | UC6 | Manager approves refill |
-| `add_coupon_to_member` | UC8 | Issue coupon |
+| Tool                       | UC      | Description             |
+|----------------------------|---------|-------------------------|
+| `check_seat_availability`  | UC7     | Check seats             |
+| `create_booking`           | UC1+UC2 | Full booking flow       |
+| `cancel_booking`           | UC3     | Cancel + refund         |
+| `check_in_ticket`          | UC4     | Check-in visitor        |
+| `create_trip`              | UC5     | Manager creates trip    |
+| `request_food_refill`      | UC6     | Ranger requests refill  |
+| `approve_food_refill`      | UC6     | Manager approves refill |
+| `add_coupon_to_member`     | UC8     | Issue coupon            |
 
 ### MCP Resources
-| URI | Description |
-|-----|-------------|
-| `report://daily` | Today's visitor & revenue report |
-| `report://food` | Food stock status |
-| `park://zones` | Zone availability listing |
+| URI              | Description                       |
+|------------------|-----------------------------------|
+| `report://daily` | Today's visitor & revenue report  |
+| `report://food`  | Food stock status                 |
+| `park://zones`   | Zone availability listing         |
 
 ### Run MCP server (stdio – for Claude Desktop)
 ```bash
@@ -220,33 +220,33 @@ dev           ← integration branch (PR target)
 
 ## 🎯 Use Cases Covered
 
-| # | Use Case | Actor | Service |
-|---|----------|-------|---------|
-| 1 | Visitor Booking | Visitor / Member | `BookingService` |
+| # |                   Use Case                 |       Actor      |      Service     |
+|---|--------------------------------------------|------------------|------------------|
+| 1 | Visitor Booking                            | Visitor / Member | `BookingService` |
 | 2 | Payment (Cash/QR), Member Discount, Coupon | Visitor / Member | `PaymentService` |
-| 3 | Cancel Booking & Refund | Visitor / Member | `BookingService` |
-| 4 | Ticket Check-in | TicketStaff | `CheckInService` |
-| 5 | Create Trip | Manager | `TripService` |
-| 6 | Food Refill Request | Ranger | `FoodService` |
-| 7 | Check Seat Availability | Member | `BookingService` |
-| 8 | Add Coupon to Member | TicketStaff | `PaymentService` |
+| 3 | Cancel Booking & Refund                    | Visitor / Member | `BookingService` |
+| 4 | Ticket Check-in                            | TicketStaff      | `CheckInService` |
+| 5 | Create Trip                                | Manager          | `TripService`    |
+| 6 | Food Refill Request                        | Ranger           | `FoodService`    |
+| 7 | Check Seat Availability                    | Member           | `BookingService` |
+| 8 | Add Coupon to Member                       | TicketStaff      | `PaymentService` |
 
 ---
 
 ## 💰 Pricing & Discount Rules
 
-| ประเภท | ราคา |
-|--------|------|
-| ผู้ใหญ่ (Adult) | 500 บาท |
-| เด็ก (Child, ≤12 ปี) | 300 บาท |
-| ผู้สูงอายุ (Senior, ≥60 ปี) | 250 บาท |
-| Feeding Ticket (เสริม) | 150 บาท |
+|         ประเภท          |   ราคา   |
+|-------------------------|---------|
+| ผู้ใหญ่ (Adult)           | 500 บาท |
+| เด็ก (Child, ≤12 ปี)      | 300 บาท |
+| ผู้สูงอายุ (Senior, ≥60 ปี) | 250 บาท  |
+| Feeding Ticket (เสริม)   | 150 บาท |
 
-| ส่วนลด | เงื่อนไข |
-|--------|---------|
-| Member Discount | 10% ทุกการจอง |
-| Coupon | ตามมูลค่าคูปอง (หมดอายุตาม `expiryDate`) |
-| Group Discount | จอง ≥ 10 ที่นั่ง ลด 5% |
+|      ส่วนลด      |                เงื่อนไข                 |
+|-----------------|---------------------------------------|
+| Member Discount | 10% ทุกการจอง                          |
+| Coupon          | ตามมูลค่าคูปอง (หมดอายุตาม `expiryDate`) |
+| Group Discount  | จอง ≥ 10 ที่นั่ง ลด 5%                    |
 
 ---
 
@@ -265,14 +265,14 @@ dev           ← integration branch (PR target)
 
 ## 🆔 Entity ID Format
 
-| Entity | Format | Example |
-|--------|--------|---------|
-| Booking | `B-YYYYMMDD-XXX` | `B-20250601-001` |
-| Ticket | `T-XXX` | `T-042` |
-| Trip | `TR-XXX` | `TR-007` |
-| Member | `M-XXX` | `M-015` |
-| Staff | `S-XXX` | `S-003` |
-| Zone | `Z-XX` | `Z-01` |
-| Cage | `C-XXX` | `C-012` |
+| Entity |       Format     |     Example      |
+|--------|------------------|------------------|
+| Booking| `B-YYYYMMDD-XXX` | `B-20250601-001` |
+| Ticket | `T-XXX`          | `T-042`          |
+| Trip   | `TR-XXX`         | `TR-007`         |
+| Member | `M-XXX`          | `M-015`          |
+| Staff  | `S-XXX`          | `S-003`          |
+| Zone   | `Z-XX`           | `Z-01`           |
+| Cage   | `C-XXX`          | `C-012`          |
 
 ---
