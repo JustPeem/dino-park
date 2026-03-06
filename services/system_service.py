@@ -7,10 +7,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import date, datetime
+import json
+from pathlib import Path
 from typing import Any
 from uuid import uuid4
-
-from services.seed_loader import load_seed_data
 
 
 @dataclass
@@ -26,6 +26,42 @@ class BookingRecord:
     created_at: datetime = field(default_factory=datetime.utcnow)
 
 
+
+
+def _default_seed_data() -> dict[str, Any]:
+    return {
+        "staff": [],
+        "vehicles": [],
+        "zones": [],
+        "cages": [],
+        "dinos": [],
+        "trips": [],
+    }
+
+
+def _load_seed_data(path: str = "data/sample_seed_data.json") -> dict[str, Any]:
+    data_file = Path(path)
+    if not data_file.exists():
+        return _default_seed_data()
+
+    try:
+        with data_file.open("r", encoding="utf-8-sig") as file:
+            raw = file.read().strip()
+            if not raw:
+                return _default_seed_data()
+            data = json.loads(raw)
+    except (OSError, json.JSONDecodeError, UnicodeDecodeError):
+        return _default_seed_data()
+
+    if not isinstance(data, dict):
+        return _default_seed_data()
+
+    defaults = _default_seed_data()
+    return {
+        key: data.get(key, defaults[key]) if isinstance(data.get(key, defaults[key]), list) else defaults[key]
+        for key in defaults
+    }
+
 class DinoParkService:
     """Simple in-memory implementation for API/MCP feature parity from README."""
 
@@ -35,7 +71,7 @@ class DinoParkService:
         self._food_stock: dict[str, int] = {"herbivore": 100, "carnivore": 60}
         self._refill_requests: dict[str, dict[str, Any]] = {}
 
-        seed = load_seed_data()
+        seed = _load_seed_data()
         self._staff: dict[str, dict[str, Any]] = {item["staff_id"]: item for item in seed.get("staff", [])}
         self._vehicles: dict[str, dict[str, Any]] = {item["vehicle_id"]: item for item in seed.get("vehicles", [])}
         self._zones: dict[str, dict[str, Any]] = {item["zone_id"]: item for item in seed.get("zones", [])}
