@@ -40,20 +40,26 @@ def _default_seed_data() -> dict[str, Any]:
 
 
 def _load_seed_data(path: str = "data/sample_seed_data.json") -> dict[str, Any]:
-    data_file = Path(path)
-    if not data_file.exists():
-        return _default_seed_data()
+    candidate_files = [Path(path), Path("data/data.json"), Path("data.json")]
+    data: dict[str, Any] | None = None
 
-    try:
-        with data_file.open("r", encoding="utf-8-sig") as file:
-            raw = file.read().strip()
-            if not raw:
-                return _default_seed_data()
-            data = json.loads(raw)
-    except (OSError, json.JSONDecodeError, UnicodeDecodeError):
-        return _default_seed_data()
+    for data_file in candidate_files:
+        if not data_file.exists():
+            continue
 
-    if not isinstance(data, dict):
+        try:
+            with data_file.open("r", encoding="utf-8-sig") as file:
+                raw = file.read().strip()
+                if not raw:
+                    continue
+                loaded = json.loads(raw)
+                if isinstance(loaded, dict):
+                    data = loaded
+                    break
+        except (OSError, json.JSONDecodeError, UnicodeDecodeError):
+            continue
+
+    if data is None:
         return _default_seed_data()
 
     defaults = _default_seed_data()

@@ -21,9 +21,18 @@ except Exception as exc:  # pragma: no cover - runtime dependency guard
 mcp = FastMCP("dino-park")
 
 
+def _run_tool(action):
+    try:
+        result = action()
+        return json.dumps({"ok": True, "data": result}, default=str, ensure_ascii=False)
+    except ValueError as exc:
+        return json.dumps({"ok": False, "error": str(exc)}, ensure_ascii=False)
+
+
 @mcp.tool()
 def check_seat_availability(zone_id: str, round_id: str, trip_id: str, seats: int) -> str:
-    return json.dumps(service.check_seat_availability(zone_id, round_id, trip_id, seats), ensure_ascii=False)
+    return _run_tool(lambda: service.check_seat_availability(zone_id, round_id, trip_id, seats))
+
 
 
 @mcp.tool()
