@@ -66,7 +66,7 @@ def build_park_from_seed(seed_path: str | Path) -> Park:
             end_time = _normalize_future_time(datetime.fromisoformat(trip_row["end_time"]))
             if end_time <= start_time:
                 end_time = start_time + timedelta(hours=1)
-            round_obj = Round(zone, start_time, end_time, 500.0)
+            round_obj = Round(zone, start_time, end_time, 500.0, round_id=trip_row["round_id"])
             zone.add_round(round_obj)
             round_by_seed_key[seed_key] = round_obj
 

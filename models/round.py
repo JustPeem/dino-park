@@ -11,8 +11,15 @@ if TYPE_CHECKING:
 
 
 class Round:
-    def __init__(self, zone: "Zone", start_time: datetime, end_time: datetime, price_per_seat: float):
-        self.__round_id = f"R-{start_time.strftime('%Y%m%d%H%M')}"
+    def __init__(
+        self,
+        zone: "Zone",
+        start_time: datetime,
+        end_time: datetime,
+        price_per_seat: float,
+        round_id: str | None = None,
+    ):
+        self.__round_id = round_id or f"R-{start_time.strftime('%Y%m%d%H%M')}"
         self.__zone = zone
         self.__start_time = start_time
         self.__end_time = end_time
@@ -48,10 +55,10 @@ class Round:
             return self.__end_time > datetime.now()
         return self.__start_time <= start and end <= self.__end_time
 
-    def create_trip(self, vehicle: "Vehicle", driver: "Driver") -> "Trip":
+    def create_trip(self, vehicle: "Vehicle", driver: "Driver", trip_id: str | None = None) -> "Trip":
         from .trip import Trip
 
-        trip = Trip(vehicle=vehicle, driver=driver, round_ref=self)
+        trip = Trip(vehicle=vehicle, driver=driver, round_ref=self, trip_id=trip_id)
         self.__trips.append(trip)
         return trip
 

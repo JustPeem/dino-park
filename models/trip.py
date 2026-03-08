@@ -11,8 +11,8 @@ if TYPE_CHECKING:
 
 
 class Trip:
-    def __init__(self, vehicle: "Vehicle", driver: "Driver", round_ref: "Round"):
-        self.__trip_id = id_gen.trip_id()
+    def __init__(self, vehicle: "Vehicle", driver: "Driver", round_ref: "Round", trip_id: str | None = None):
+        self.__trip_id = trip_id or id_gen.trip_id()
         self.__vehicle = vehicle
         self.__driver = driver
         self.__round = round_ref

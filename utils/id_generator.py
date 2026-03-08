@@ -102,6 +102,15 @@ class IDGenerator:
         n = self.__next("payment")
         return f"P-{n:03d}"
 
+    def booking_id(self) -> str:
+        """
+        Generate a Booking ID.
+        Format: B-YYYYMMDD-XXX
+        e.g.  : B-20240615-001
+        """
+        today_str = date.today().strftime("%Y%m%d")
+        n = self.__next("booking")
+        return f"B-{today_str}-{n:03d}"
 
 # ── Singleton instance ───────────────────────────────────────────
 # Import and use this single instance across the entire system:

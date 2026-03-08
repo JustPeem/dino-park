@@ -67,7 +67,16 @@ class Park:
     def get_daily_visitor_count(self, query_date: date) -> int:
         return sum(len(b.tickets) for b in self.__bookings if b.booking_date.date() == query_date and b.status == "CONFIRMED")
 
-    def create_trip(self, zone_id: str, vehicle_key: str, driver_key: str, start_time: datetime, end_time: datetime) -> dict:
+    def create_trip(
+        self,
+        zone_id: str,
+        vehicle_key: str,
+        driver_key: str,
+        start_time: datetime,
+        end_time: datetime,
+        trip_id: str | None = None,
+    ) -> dict:
+        
         zone = self.get_zone(zone_id)
         if zone is None:
             return {"status": "error", "message": "Zone not found"}
