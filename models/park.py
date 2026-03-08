@@ -162,9 +162,22 @@ class Park:
             return {"status": "error", "message": "Booking not found"}
 
         trip_start: Optional[datetime] = booking.trip.start_time if booking.trip else None
-        if booking.cancel_booking(booking_id, trip_start):
-            return {"status": "success", "message": "Booking cancelled"}
-        return {"status": "error", "message": "Cancel failed"}
+        refund_percent = 100
+        if trip_start is not None:
+            time_to_trip = trip_start - datetime.now()
+            if time_to_trip.total_seconds() <= 0:
+                return {"status": "error", "message": "Trip already started"}
+            if time_to_trip <= timedelta(hours=24):
+                refund_percent = 50
+
+        if booking.cancel_booking(booking_id):
+            return {
+                "status": "success",
+                "message": "Booking cancelled",
+                "refund_percent": refund_percent,
+                "refund_amount": booking.total_price * (refund_percent / 100),
+            }
+        return {"status": "error", "message": "Cancellation failed"}
 
     def check_in(self, ticket_id: str) -> dict:
         booking = self.find_booking_by_ticket(ticket_id)

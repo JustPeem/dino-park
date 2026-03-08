@@ -77,6 +77,31 @@ def create_booking(
 def cancel_booking(booking_id: str) -> dict:
     return park.cancel_booking(booking_id)
 
+@mcp.tool()
+def get_round_details(zone_id: str) -> dict:
+    zone = park.get_zone(zone_id)
+    if zone is None:
+        return {"status": "error", "message": "Zone not found"}
+    return {
+        "status": "success",
+        "rounds": [
+            {
+                "round_id": round_obj.round_id,
+                "start_time": round_obj.start_time.isoformat(),
+                "end_time": round_obj.end_time.isoformat(),
+                "price_per_seat": round_obj.price_per_seat,
+                "trips": [
+                    {
+                        "trip_id": trip.trip_id,
+                        "vehicle_id": trip.vehicle.vehicle_id,
+                        "driver_name": trip.driver.name,
+                    }
+                    for trip in round_obj.trips
+                ],
+            }
+            for round_obj in zone.rounds
+        ],
+    }
 
 @mcp.tool()
 def check_in_ticket(ticket_id: str) -> dict:

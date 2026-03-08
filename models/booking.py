@@ -83,11 +83,10 @@ class Booking:
                 self.__tickets.append(Ticket(round_ref=self.__round, seat_number=seat_number))
         return self.__tickets
 
-    def cancel_booking(self, booking_id: str, trip_start: datetime | None) -> bool:
+    def cancel_booking(self, booking_id: str) -> bool:
         if booking_id != self.__booking_id:
             return False
-        if trip_start and datetime.now() > trip_start - timedelta(hours=24):
-            return False
+        
         if self.__status == "CANCELLED":
             return False
         self.__status = "CANCELLED"
