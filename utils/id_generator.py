@@ -1,9 +1,3 @@
-# id_generator.py
-# Centralized ID generation for all entities in the system.
-#
-# Format per spec:
-#   Booking : B-YYYYMMDD-XXX   e.g. B-20250601-001
-#   Ticket  : T-XXX            e.g. T-042
 #   Trip    : TR-XXX           e.g. TR-007
 #   Member  : M-XXX            e.g. M-015
 #   Staff   : S-XXX            e.g. S-003
@@ -29,6 +23,7 @@ class IDGenerator:
             "staff":   0,
             "zone":    0,
             "cage":    0,
+            "payment": 0,
         }
 
     # ── private helper ──────────────────────────────────────────
@@ -54,64 +49,7 @@ class IDGenerator:
         if entity is None:
             for key in self.__counters:
                 self.__counters[key] = 0
-        else:
-            self.__validate_entity(entity)
-            self.__counters[entity] = 0
-
-    def current(self, entity: str) -> int:
-        """Return the current counter value without incrementing."""
-        self.__validate_entity(entity)
-        return self.__counters[entity]
-
-    # ── public generators ────────────────────────────────────────
-    def booking_id(self, booking_date: date = None) -> str:
-        """
-        Generate a Booking ID.
-        Format: B-YYYYMMDD-XXX
-        e.g.  : B-20250601-001
-
-        booking_date must be today or within the next 30 days (per spec).
-        """
-        if booking_date is None:
-            booking_date = date.today()
-        if not isinstance(booking_date, date):
-            raise TypeError("booking_date must be a date instance.")
-        today = date.today()
-        if booking_date < today:
-            raise ValueError("booking_date must not be in the past.")
-        if (booking_date - today).days > 30:
-            raise ValueError("booking_date must be within 30 days from today (per spec).")
-        n = self.__next("booking")
-        return f"B-{booking_date.strftime('%Y%m%d')}-{n:03d}"
-
-    def ticket_id(self) -> str:
-        """
-        Generate a Ticket ID.
-        Format: T-XXX
-        e.g.  : T-042
-        """
-        n = self.__next("ticket")
-        return f"T-{n:03d}"
-
-    def trip_id(self) -> str:
-        """
-        Generate a Trip ID.
-        Format: TR-XXX
-        e.g.  : TR-007
-        """
-        n = self.__next("trip")
-        return f"TR-{n:03d}"
-
-    def member_id(self) -> str:
-        """
-        Generate a Member ID.
-        Format: M-XXX
-        e.g.  : M-015
-        """
-        n = self.__next("member")
-        return f"M-{n:03d}"
-
-    def staff_id(self) -> str:
+        
         """
         Generate a Staff ID.
         Format: S-XXX
@@ -137,6 +75,32 @@ class IDGenerator:
         """
         n = self.__next("cage")
         return f"C-{n:03d}"
+    
+    def trip_id(self) -> str:
+        """
+        Generate a Trip ID.
+        Format: TR-XXX
+        e.g.  : TR-007
+        """
+        n = self.__next("trip")
+        return f"TR-{n:03d}"
+    def member_id(self) -> str:
+        """
+        Generate a Member ID.
+        Format: M-XXX
+        e.g.  : M-015
+        """
+        n = self.__next("member")
+        return f"M-{n:03d}"
+    
+    def payment_id(self) -> str:
+        """
+        Generate a Payment ID.
+        Format: P-XXX
+        e.g.  : P-001
+        """
+        n = self.__next("payment")
+        return f"P-{n:03d}"
 
 
 # ── Singleton instance ───────────────────────────────────────────

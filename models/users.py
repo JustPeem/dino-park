@@ -1,25 +1,26 @@
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
-import re
+
+from utils.id_generator import id_gen
 
 if TYPE_CHECKING:
-    from coupon import Coupon
+    from .coupon import Coupon
 
-MEMBER_DISCOUNT_RATE = 0.10
+MEMBER_DISCOUNT_PERCENT = 10.0
 
 
 class User(ABC):
-    """Abstract base class for all users in the system."""
-
-    def __init__(self, name: str, phone_number: str, user_type: str):
-        if not isinstance(name, str) or not name.strip():
-            raise ValueError("name must be a non-empty string.")
-        if not isinstance(phone_number, str) or not re.fullmatch(r"\d{10}", phone_number):
-            raise ValueError("phone_number must be a 10-digit string.")
-
-        self.__name = name.strip()
+    def __init__(self, name: str, phone_number: str, user_type: str, user_id: str):
+        self.__name = name
         self.__phone_number = phone_number
         self.__user_type = user_type
+        self.__user_id = user_id
+
+    @property
+    def user_id(self) -> str:
+        return self.__user_id
 
     @property
     def name(self) -> str:
@@ -35,88 +36,40 @@ class User(ABC):
 
     @abstractmethod
     def __repr__(self):
-        pass
+        ...
 
 
 class Member(User):
-    """Registered member with coupons and discount capabilities."""
-
     def __init__(self, name: str, phone_number: str):
-        super().__init__(name, phone_number, user_type="member")
+        super().__init__(name, phone_number, user_type="member", user_id=id_gen.member_id())
         self.__coupons: list["Coupon"] = []
 
-    @property
-    def coupons(self) -> list["Coupon"]:
-        return self.__coupons
-
     def add_coupon(self, coupon: "Coupon") -> None:
-        """Add a coupon to the member's coupon list."""
-        from coupon import Coupon
-        if not isinstance(coupon, Coupon):
-            raise TypeError("coupon must be a Coupon instance.")
         self.__coupons.append(coupon)
 
     def use_coupon(self, coupon_code: str) -> float:
-        """
-        Attempt to use a coupon by code and return the discount amount.
-        Marks the coupon as used if valid.
-
-        Returns discount amount (float) if successful, 0.0 if not found or invalid.
-        Used in sequence: UseCoupon(coupon_code) → discount
-        """
-        if not isinstance(coupon_code, str) or not coupon_code.strip():
-            raise ValueError("coupon_code must be a non-empty string.")
-
         for coupon in self.__coupons:
-            if coupon.coupon_code == coupon_code:
-                if coupon.is_valid():
-                    coupon.mark_used()
-                    print(f"Coupon '{coupon_code}' applied. Discount: {coupon.discount_amount:.2f}")
-                    return coupon.discount_amount
-                else:
-                    print(f"Coupon '{coupon_code}' is invalid or already used.")
-                    return 0.0
-        print(f"Coupon '{coupon_code}' not found.")
+            if coupon.coupon_code == coupon_code and coupon.is_valid():
+                coupon.mark_used()
+                return coupon.discount_amount
         return 0.0
 
-    def calculate_discount(self, base_price: float, discount: float = 0.0) -> float:
-        """
-        Calculate the final price after applying Member discount and coupon discount:
-          1. Member discount: 10%
-          2. Coupon discount: fixed amount passed in from use_coupon()
+    def member_discount_percent(self) -> float:
+        return MEMBER_DISCOUNT_PERCENT
 
-        Note: Group discount (5% for seats >= 10) is handled by Booking.calculate_final_price()
-        since seat count is Booking's responsibility, not Member's.
-
-        Returns the final discounted price (minimum 0.0).
-        Used in sequence: calculateDiscount(basePrice) → discount → Booking.calculateFinalPrice()
-        """
-        if not isinstance(base_price, (int, float)) or base_price < 0:
-            raise ValueError("base_price must be a non-negative number.")
-        if not isinstance(discount, (int, float)) or discount < 0:
-            raise ValueError("discount must be a non-negative number.")
-
-        # 1. Member discount (10%)
-        price = base_price * (1 - MEMBER_DISCOUNT_RATE)
-
-        # 2. Coupon discount (fixed amount from use_coupon)
-        price = price - discount
-
-        return max(0.0, price)
-
-    def get_valid_coupons(self) -> list["Coupon"]:
-        """Return a list of all valid (unused and non-expired) coupons."""
-        return [c for c in self.__coupons if c.is_valid()]
+    def get_active_food_coupon(self) -> "Coupon | None":
+        for coupon in self.__coupons:
+            if coupon.coupon_code == "FOOD_COUPON" and coupon.is_valid():
+                return coupon
+        return None
 
     def __repr__(self):
-        return f"Member(name={self.name}, phone={self.phone_number}, coupons={len(self.__coupons)})"
+        return f"Member(id={self.user_id}, name={self.name})"
 
 
 class GuestUser(User):
-    """Guest user without membership privileges."""
-
     def __init__(self, name: str, phone_number: str):
-        super().__init__(name, phone_number, user_type="guest")
+        super().__init__(name, phone_number, user_type="guest", user_id=f"G-{phone_number}")
 
     def __repr__(self):
-        return f"GuestUser(name={self.name}, phone={self.phone_number})"
+        return f"GuestUser(id={self.user_id}, name={self.name})"

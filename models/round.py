@@ -1,138 +1,84 @@
-"""
-Round entity – represents a safari round in a Zone
-"""
-
 from __future__ import annotations
-from typing import List, Optional
-from utils.id_generator import generate_round_id
 
 from datetime import datetime
+from typing import TYPE_CHECKING, Optional
+
+if TYPE_CHECKING:
+    from .trip import Trip
+    from .vehicle import Vehicle
+    from .driver import Driver
+    from .zone import Zone
 
 
 class Round:
-    """
-    A Round is a time slot inside a specific Zone.
-    Each round contains multiple trips created by Manager.
-    """
-
     def __init__(self, zone: "Zone", start_time: datetime, end_time: datetime, price_per_seat: float):
-
-        self.__round_id = generate_round_id()
+        self.__round_id = f"R-{start_time.strftime('%Y%m%d%H%M')}"
         self.__zone = zone
-
         self.__start_time = start_time
         self.__end_time = end_time
         self.__price_per_seat = price_per_seat
-
-        self.__trips: List["Trip"] = []   # trips belonging to this round
-
-    # ─────────────────────────────
-    # Properties
-    # ─────────────────────────────
+        self.__trips: list["Trip"] = []
 
     @property
-    def round_id(self):
+    def round_id(self) -> str:
         return self.__round_id
 
     @property
-    def zone(self):
-        return self.__zone
+    def date(self):
+        return self.__start_time.date()
 
     @property
-    def start_time(self):
+    def start_time(self) -> datetime:
         return self.__start_time
 
     @property
-    def end_time(self):
+    def end_time(self) -> datetime:
         return self.__end_time
 
     @property
-    def price_per_seat(self):
+    def price_per_seat(self) -> float:
         return self.__price_per_seat
 
     @property
-    def trips(self):
+    def trips(self) -> list["Trip"]:
         return self.__trips
 
-    # ─────────────────────────────
-    # Availability Check
-    # ─────────────────────────────
+    def is_available(self, start: datetime | None, end: datetime | None) -> bool:
+        if start is None or end is None:
+            return self.__end_time > datetime.now()
+        return self.__start_time <= start and end <= self.__end_time
 
-    def isAvailable(self, start: datetime, end: datetime) -> bool:
-        """
-        Check if the round time overlaps with requested time.
-        """
-        return (self.__start_time <= start <= self.__end_time) and (
-            self.__start_time <= end <= self.__end_time
-        )
-
-    # ─────────────────────────────
-    # Trip Management
-    # ─────────────────────────────
-
-    def createTrip(self, vehicle: "Vehicle", driver: "Driver") -> "Trip":
-        """
-        Manager creates a trip.
-        Round → createTrip → returns Trip object
-        """
+    def create_trip(self, vehicle: "Vehicle", driver: "Driver") -> "Trip":
         from .trip import Trip
-        for other_round in self.zone.rounds:  # ต้องมี getter ของ rounds ใน Zone
-            for t in other_round.trips:
-                if t.driver.driver_id == driver.driver_id:
-                # เช็คเวลาทับ
-                    if not (self.end_time <= other_round.start_time or
-                            self.start_time >= other_round.end_time):
-                        raise ValueError("Driver is already assigned to another trip at this time")
-                    
-            # เช็ครถซ้ำ
-        for other_round in self.zone.rounds:
-            for t in other_round.trips:
-                if t.vehicle.vehicle_id == vehicle.vehicle_id:
-                    if not (self.end_time <= other_round.start_time or
-                            self.start_time >= other_round.end_time):
-                        raise ValueError("Vehicle is already assigned to another trip at this time")
-                        
+
         trip = Trip(vehicle=vehicle, driver=driver, round_ref=self)
         self.__trips.append(trip)
         return trip
 
-    def getTrip(self, trip_id: str) -> Optional["Trip"]:
-        """
-        Find trip by ID — used in booking sequence diagram
-        """
-        for t in self.__trips:
-            if t.trip_id == trip_id:
-                return t
+    def get_trip(self, trip_id: str) -> Optional["Trip"]:
+        for trip in self.__trips:
+            if trip.trip_id == trip_id:
+                return trip
         return None
 
-    # ─────────────────────────────
-    # Capacity Calculations
-    # ─────────────────────────────
+    def get_total_capacity(self) -> int:
+        return sum(t.total_seats for t in self.__trips)
+
+    def get_current_visitor_count(self) -> int:
+        return sum(t.reserved_seats for t in self.__trips)
+
+    # backward compatible aliases
+    def isAvailable(self, start: datetime, end: datetime) -> bool:
+        return self.is_available(start, end)
+
+    def createTrip(self, vehicle: "Vehicle", driver: "Driver") -> "Trip":
+        return self.create_trip(vehicle, driver)
+
+    def getTrip(self, trip_id: str) -> Optional["Trip"]:
+        return self.get_trip(trip_id)
 
     def getTotalCapacity(self) -> int:
-        """
-        Sum of all vehicle capacities for all trips in this round
-        """
-        total = 0
-        for t in self.__trips:
-            total += t.total_seats
-        return total
+        return self.get_total_capacity()
 
     def getCurrentVisitorCount(self) -> int:
-        """
-        Current visitors = sum(reserved seats of every trip)
-        """
-        count = 0
-        for t in self.__trips:
-            count += t.reserved_seats
-        return count
-
-    # ─────────────────────────────
-    # Debug
-    # ─────────────────────────────
-
-    def __repr__(self):
-        return (
-            f"Round({self.__round_id}, zone={self.__zone.zone_id}, "
-            f"trips={len(self.__trips)}, price={self.__price_per_seat})"
-        )
+        return self.get_current_visitor_count()
