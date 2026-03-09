@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from mcp.server.fastmcp import FastMCP
+from fastmcp import FastMCP
 
 from api.bootstrap import build_park_from_seed
 from models.users import Member
@@ -56,15 +56,18 @@ def list_actors() -> dict:
         }
         for member in park.list_members()
     ]
-    staffs = [
-        {
-            "actor_type": staff.role,
-            "actor_id": staff.staff_id,
-            "name": staff.name,
-        }
-        for staff in park.list_staff()
-        if getattr(staff, "role", "") in ACTOR_ROLES
-    ]
+    staffs = []
+    for staff in park.list_staff():
+        role = getattr(staff, "role", "")
+        if role not in ACTOR_ROLES:
+            continue
+        staffs.append(
+            {
+                "actor_type": role,
+                "actor_id": staff.staff_id,
+                "name": staff.name,
+            }
+        )
     return {"status": "success", "actors": members + staffs}
 
 
