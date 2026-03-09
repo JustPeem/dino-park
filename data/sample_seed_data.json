@@ -1,24 +1,78 @@
 {
   "staff": [
-    {"staff_id": "S-001", "name": "Narin", "role": "manager"},
-    {"staff_id": "S-002", "name": "Ploy", "role": "ranger"},
-    {"staff_id": "S-003", "name": "Korn", "role": "driver", "license_id": "DRV-7788"}
+    {
+      "staff_id": "S-001",
+      "name": "Narin",
+      "role": "manager"
+    },
+    {
+      "staff_id": "S-002",
+      "name": "Ploy",
+      "role": "ranger"
+    },
+    {
+      "staff_id": "S-003",
+      "name": "Korn",
+      "role": "driver",
+      "license_id": "DRV-7788"
+    },
+    {
+      "staff_id": "S-004",
+      "name": "Mint",
+      "role": "ticket_staff"
+    }
   ],
   "vehicles": [
-    {"vehicle_id": "V-001", "name": "Safari Truck 1", "capacity": 20},
-    {"vehicle_id": "V-002", "name": "Safari Truck 2", "capacity": 40}
+    {
+      "vehicle_id": "V-001",
+      "name": "Safari Truck 1",
+      "capacity": 20
+    },
+    {
+      "vehicle_id": "V-002",
+      "name": "Safari Truck 2",
+      "capacity": 40
+    }
   ],
   "zones": [
-    {"zone_id": "Z-01", "name": "Herbivore Valley", "open": true},
-    {"zone_id": "Z-02", "name": "Raptor Ridge", "open": true}
+    {
+      "zone_id": "Z-01",
+      "name": "Herbivore Valley",
+      "open": true
+    },
+    {
+      "zone_id": "Z-02",
+      "name": "Raptor Ridge",
+      "open": true
+    }
   ],
   "cages": [
-    {"cage_id": "C-001", "zone_id": "Z-01", "name": "Long Neck Habitat"},
-    {"cage_id": "C-002", "zone_id": "Z-02", "name": "Raptor Arena"}
+    {
+      "cage_id": "C-001",
+      "zone_id": "Z-01",
+      "name": "Long Neck Habitat"
+    },
+    {
+      "cage_id": "C-002",
+      "zone_id": "Z-02",
+      "name": "Raptor Arena"
+    }
   ],
   "dinos": [
-    {"dino_id": "D-001", "name": "Brachio", "species": "Brachiosaurus", "food_type": "herbivore", "cage_id": "C-001"},
-    {"dino_id": "D-002", "name": "Blue", "species": "Velociraptor", "food_type": "carnivore", "cage_id": "C-002"}
+    {
+      "dino_id": "D-001",
+      "name": "Brachio",
+      "species": "Brachiosaurus",
+      "food_type": "herbivore",
+      "cage_id": "C-001"
+    },
+    {
+      "dino_id": "D-002",
+      "name": "Blue",
+      "species": "Velociraptor",
+      "food_type": "carnivore",
+      "cage_id": "C-002"
+    }
   ],
   "trips": [
     {
@@ -40,6 +94,18 @@
       "capacity": 40,
       "start_time": "2026-03-06T11:00:00",
       "end_time": "2026-03-06T12:00:00"
+    }
+  ],
+  "members": [
+    {
+      "member_id": "M-001",
+      "name": "Alice",
+      "phone_number": "0811111111"
+    },
+    {
+      "member_id": "M-002",
+      "name": "Bob",
+      "phone_number": "0822222222"
     }
   ]
 }

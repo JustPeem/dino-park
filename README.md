@@ -127,6 +127,9 @@ MCP exposes all 8 use cases as **AI-callable tools** for Claude Desktop, Cursor,
 ### MCP Tools
 | Tool                       | UC      | Description             |
 |----------------------------|---------|-------------------------|
+| `list_actors`              | –       | List actor IDs for login |
+| `login`                    | –       | Login MCP by actor type + actor_id |
+| `logout`                   | –       | Clear MCP actor session |
 | `check_seat_availability`  | UC7     | Check seats             |
 | `create_booking`           | UC1+UC2 | Full booking flow       |
 | `cancel_booking`           | UC3     | Cancel + refund         |
@@ -136,6 +139,7 @@ MCP exposes all 8 use cases as **AI-callable tools** for Claude Desktop, Cursor,
 | `approve_food_refill`      | UC6     | Manager approves refill |
 | `add_coupon_to_member`     | UC8     | Issue coupon            |
 
+> หมายเหตุ: เครื่องมือ MCP ถูกบังคับให้ `login` ก่อนใช้งาน โดยใช้ `actor_id` (member_id/staff_id) และแบ่ง actor เป็น `member`, `ticket_staff`, `manager`, และ `ranger`
 ### MCP Resources
 | URI              | Description                       |
 |------------------|-----------------------------------|

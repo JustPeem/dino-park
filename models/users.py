@@ -40,8 +40,8 @@ class User(ABC):
 
 
 class Member(User):
-    def __init__(self, name: str, phone_number: str):
-        super().__init__(name, phone_number, user_type="member", user_id=id_gen.member_id())
+    def __init__(self, name: str, phone_number: str, member_id: str | None = None):
+        super().__init__(name, phone_number, user_type="member", user_id=member_id or id_gen.member_id())
         self.__coupons: list["Coupon"] = []
 
     def add_coupon(self, coupon: "Coupon") -> None:
