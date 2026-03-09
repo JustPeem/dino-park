@@ -2,15 +2,37 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from mcp.server.fastmcp import FastMCP
+from fastmcp import FastMCP
 
 from api.bootstrap import build_park_from_seed
 from models.users import Member
 
 SEED_PATH = Path(__file__).resolve().parents[1] / "data" / "sample_seed_data.json"
 park = build_park_from_seed(SEED_PATH)
-
 mcp = FastMCP("dino-park")
+
+ROLE_MEMBER = "member"
+ROLE_TICKET_STAFF = "ticket_staff"
+ROLE_MANAGER = "manager"
+ROLE_RANGER = "ranger"
+
+ACTOR_ROLES = {ROLE_MEMBER, ROLE_TICKET_STAFF, ROLE_MANAGER, ROLE_RANGER}
+
+current_session: dict[str, str] | None = None
+
+
+def _deny(message: str) -> dict:
+    return {"status": "error", "message": message}
+
+
+def _require_login(*allowed_roles: str) -> dict | None:
+    if current_session is None:
+        return _deny("Please login first")
+
+    actor_type = current_session.get("actor_type")
+    if actor_type not in allowed_roles:
+        return _deny(f"Role '{actor_type}' is not allowed for this action")
+    return None
 
 
 def _find_round_and_trip(zone_id: str, round_id: str, trip_id: str):
@@ -25,7 +47,80 @@ def _find_round_and_trip(zone_id: str, round_id: str, trip_id: str):
 
 
 @mcp.tool()
+def list_actors() -> dict:
+    members = [
+        {
+            "actor_type": ROLE_MEMBER,
+            "actor_id": member.user_id,
+            "name": member.name,
+        }
+        for member in park.list_members()
+    ]
+    staffs = []
+    for staff in park.list_staff():
+        role = getattr(staff, "role", "")
+        if role not in ACTOR_ROLES:
+            continue
+        staffs.append(
+            {
+                "actor_type": role,
+                "actor_id": staff.staff_id,
+                "name": staff.name,
+            }
+        )
+    return {"status": "success", "actors": members + staffs}
+
+
+@mcp.tool()
+def login(actor_type: str, actor_id: str) -> dict:
+    global current_session
+
+    actor_type = actor_type.strip().lower()
+    actor_id = actor_id.strip()
+    if actor_type not in ACTOR_ROLES:
+        return _deny("Invalid actor_type. Use member, ticket_staff, manager, or ranger")
+    if not actor_id:
+        return _deny("actor_id is required")
+
+    if actor_type == ROLE_MEMBER:
+        member = park.get_user_by_id(actor_id)
+        if member is None:
+            return _deny("Member not found")
+        current_session = {
+            "actor_type": ROLE_MEMBER,
+            "actor_id": member.user_id,
+            "name": member.name,
+            "phone_number": member.phone_number,
+        }
+        return {"status": "success", "session": current_session}
+
+    staff = park.get_staff_by_id(actor_id)
+    if staff is None:
+        return _deny("Staff not found")
+    if getattr(staff, "role", "") != actor_type:
+        return _deny(f"Staff {actor_id} is not a {actor_type}")
+
+    current_session = {
+        "actor_type": actor_type,
+        "actor_id": actor_id,
+        "name": staff.name,
+    }
+    return {"status": "success", "session": current_session}
+
+
+
+@mcp.tool()
+def logout() -> dict:
+    global current_session
+    current_session = None
+    return {"status": "success", "message": "Logged out"}
+
+
+@mcp.tool()
 def check_seat_availability(zone_id: str, round_id: str) -> dict:
+    denied = _require_login(ROLE_MEMBER, ROLE_TICKET_STAFF, ROLE_MANAGER)
+    if denied is not None:
+        return denied
     return park.check_available_seats(zone_id, round_id)
 
 
@@ -40,10 +135,21 @@ def create_booking(
     coupon_code: str | None = None,
     payment_channel: str = "cash",
 ) -> dict:
-    member = park.find_member_by_phone_number(phone_number)
-    if member is None:
-        member = Member(name, phone_number)
-        park.add_member(member)
+    denied = _require_login(ROLE_MEMBER, ROLE_TICKET_STAFF)
+    if denied is not None:
+        return denied
+
+    session = current_session or {}
+    if session.get("actor_type") == ROLE_MEMBER:
+        member = park.get_user_by_id(session.get("actor_id", ""))
+        if member is None:
+            return _deny("Member session invalid")
+        phone_number = member.phone_number
+    else:
+        member = park.find_member_by_phone_number(phone_number)
+        if member is None:
+            member = Member(name, phone_number)
+            park.add_member(member)
 
     zone, round_obj, trip = _find_round_and_trip(zone_id, round_id, trip_id)
     if zone is None:
@@ -75,10 +181,16 @@ def create_booking(
 
 @mcp.tool()
 def cancel_booking(booking_id: str) -> dict:
+    denied = _require_login(ROLE_MEMBER, ROLE_TICKET_STAFF, ROLE_MANAGER)
+    if denied is not None:
+        return denied
     return park.cancel_booking(booking_id)
 
 @mcp.tool()
 def get_round_details(zone_id: str) -> dict:
+    denied = _require_login(ROLE_MEMBER, ROLE_TICKET_STAFF, ROLE_MANAGER)
+    if denied is not None:
+        return denied
     zone = park.get_zone(zone_id)
     if zone is None:
         return {"status": "error", "message": "Zone not found"}
@@ -105,11 +217,18 @@ def get_round_details(zone_id: str) -> dict:
 
 @mcp.tool()
 def check_in_ticket(ticket_id: str) -> dict:
+    denied = _require_login(ROLE_TICKET_STAFF)
+    if denied is not None:
+        return denied
     return park.check_in(ticket_id)
 
 
 @mcp.tool()
 def create_trip(zone_id: str, vehicle_id: str, driver_license_id: str, start_time: str, end_time: str) -> dict:
+    denied = _require_login(ROLE_MANAGER)
+    if denied is not None:
+        return denied
+
     from datetime import datetime
 
     result = park.create_trip(
@@ -126,16 +245,26 @@ def create_trip(zone_id: str, vehicle_id: str, driver_license_id: str, start_tim
 
 @mcp.tool()
 def request_food_refill(zone_id: str) -> dict:
+    denied = _require_login(ROLE_RANGER)
+    if denied is not None:
+        return denied
     return park.request_food_refill(zone_id)
 
 
 @mcp.tool()
 def approve_food_refill(zone_id: str) -> dict:
+    denied = _require_login(ROLE_MANAGER)
+    if denied is not None:
+        return denied
     return park.request_food_refill(zone_id)
 
 
 @mcp.tool()
 def add_coupon_to_member(member_id: str) -> dict:
+    denied = _require_login(ROLE_TICKET_STAFF)
+    if denied is not None:
+        return denied
+
     result = park.issue_food_coupon(member_id)
     if result.get("status") != "success":
         return result
@@ -148,6 +277,10 @@ def add_coupon_to_member(member_id: str) -> dict:
 
 @mcp.resource("report://daily")
 def daily_report() -> dict:
+    denied = _require_login(ROLE_MANAGER)
+    if denied is not None:
+        return denied
+
     from datetime import date
 
     return {"date": str(date.today()), "visitor_count": park.get_daily_visitor_count(date.today())}
@@ -155,6 +288,10 @@ def daily_report() -> dict:
 
 @mcp.resource("report://food")
 def food_report() -> dict:
+    denied = _require_login(ROLE_MANAGER, ROLE_RANGER)
+    if denied is not None:
+        return denied
+
     items = []
     for zone in park.zones:
         for cage in zone.get_cages():
@@ -169,6 +306,10 @@ def food_report() -> dict:
 
 @mcp.resource("park://zones")
 def zones_report() -> dict:
+    denied = _require_login(ROLE_MEMBER, ROLE_TICKET_STAFF, ROLE_MANAGER, ROLE_RANGER)
+    if denied is not None:
+        return denied
+
     return {
         "zones": [
             {

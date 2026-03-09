@@ -8,6 +8,8 @@ from models.cage import Cage
 from models.dino import Dino
 from models.driver import Driver
 from models.park import Park
+from models.staff import Manager, Ranger, TicketStaff
+from models.users import Member
 from models.round import Round
 from models.vehicle import Vehicle
 from models.zone import Zone
@@ -51,8 +53,18 @@ def build_park_from_seed(seed_path: str | Path) -> Park:
         park.add_vehicle(Vehicle(vehicle_row["vehicle_id"], int(capacity)))
 
     for staff_row in payload.get("staff", []):
-        if staff_row.get("role") == "driver":
+        role = staff_row.get("role")
+        if role == "driver":
             park.add_staff(Driver(staff_row["staff_id"], staff_row["name"], staff_row["license_id"]))
+        elif role == "manager":
+            park.add_staff(Manager(staff_row["staff_id"], staff_row["name"]))
+        elif role == "ranger":
+            park.add_staff(Ranger(staff_row["staff_id"], staff_row["name"]))
+        elif role == "ticket_staff":
+            park.add_staff(TicketStaff(staff_row["staff_id"], staff_row["name"]))
+
+    for member_row in payload.get("members", []):
+        park.add_member(Member(member_row["name"], member_row["phone_number"], member_row["member_id"]))
 
     round_by_seed_key: dict[tuple[str, str], Round] = {}
     for trip_row in payload.get("trips", []):
@@ -85,7 +97,6 @@ def build_park_from_seed(seed_path: str | Path) -> Park:
             driver = park.get_driver(trip_row["license_id"])
 
         if driver is None:
-            # fallback to any available driver
             for staff in payload.get("staff", []):
                 if staff.get("role") == "driver":
                     d = park.get_driver(staff["license_id"])

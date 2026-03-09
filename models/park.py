@@ -41,6 +41,12 @@ class Park:
     def add_staff(self, staff) -> None:
         self.__staff.append(staff)
 
+    def get_staff_by_id(self, staff_id: str):
+        return next((s for s in self.__staff if getattr(s, "staff_id", None) == staff_id), None)
+
+    def list_staff(self) -> list:
+        return list(self.__staff)
+
     def get_driver(self, driver_key: str) -> Optional["Driver"]:
         from .driver import Driver
 
@@ -48,6 +54,9 @@ class Park:
 
     def add_member(self, member: "Member") -> None:
         self.__members.append(member)
+    
+    def list_members(self) -> list["Member"]:
+        return list(self.__members)
 
     def find_member_by_phone_number(self, number: str) -> Optional["Member"]:
         return next((m for m in self.__members if m.phone_number == number), None)
