@@ -5,14 +5,14 @@ class Dino:
     def __init__(self, dino_id: str, species: str, food_source: str):
         self.__dino_id = dino_id
         self.__species = species
-        self.__food_source = food_source  # maps to 'Food Sources' in class diagram
+        self.__food_source = food_source
+
+    @property
+    def dino_id(self) -> str:
+        return self.__dino_id
 
     @property
     def food_source(self) -> str:
-        """
-        The food type this dinosaur eats.
-        Called as getFoodSource() in the Ranger-Request-Food-Refill sequence.
-        """
         return self.__food_source
 
     def __repr__(self) -> str:
