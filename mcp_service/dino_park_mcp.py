@@ -94,7 +94,7 @@ def get_round_details(zone_id: str) -> dict:
                     {
                         "trip_id": trip.trip_id,
                         "vehicle_id": trip.vehicle.vehicle_id,
-                        "driver_name": trip.driver.name,
+                        "driver_id": trip.driver.staff_id,
                     }
                     for trip in round_obj.trips
                 ],
