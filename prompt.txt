@@ -1,0 +1,185 @@
+1. Member Booking Scenario
+
+A tourist wants to book a dinosaur safari trip.
+
+Steps:
+1. login as member M-001
+2. show all park zones
+3. get round details for zone Z-01
+4. check seat availability for zone Z-01 round R-0900
+5. if at least 2 seats are available, create a booking for 2 seats
+6. use trip TR-001
+7. pay with cash
+8. return booking id and ticket ids
+
+Tools expected
+
+login
+zones_report
+get_round_details
+check_seat_availability
+create_booking
+2. Ticket Staff Booking for Walk-in Customer
+
+A walk-in visitor wants to join the raptor safari.
+
+Steps:
+1. login as ticket staff S-004
+2. check seat availability for zone Z-02 round R-1100
+3. if seats are available create a booking
+
+customer info:
+name: Charlie
+phone: 0833333333
+
+booking details:
+zone Z-02
+round R-1100
+trip TR-002
+seats 3
+payment cash
+
+4. issue a food coupon to the member after booking
+5. return booking confirmation and coupon code
+
+Tools expected
+
+login
+check_seat_availability
+create_booking
+add_coupon_to_member
+
+
+3. Ranger Food Refill Scenario
+
+A ranger notices that dinosaurs in Herbivore Valley need more food.
+
+Steps:
+1. login as ranger S-002
+2. request food refill for zone Z-01
+3. logout
+4. login as manager S-001
+5. approve the food refill
+6. show the food inventory report
+
+Tools expected
+
+login
+request_food_refill
+logout
+login
+approve_food_refill
+food_report
+
+
+4. Ticket Check-In Scenario
+
+ใช้ ticket scanning
+
+Visitors arrive at the entrance.
+
+Steps:
+1. login as ticket staff S-004
+2. check in ticket TICKET-001
+3. check in ticket TICKET-002
+4. if a ticket fails validation report the reason
+
+Tools expected
+
+login
+check_in_ticket
+
+
+5. Manager Creates New Trip
+
+ใช้ manager + trip creation
+
+Park management wants to add another safari trip.
+
+Steps:
+1. login as manager S-001
+2. create a new trip
+
+details:
+zone_id Z-01
+vehicle_id V-001
+driver_license_id DRV-7788
+start_time 2026-03-07T14:00:00
+end_time 2026-03-07T15:00:00
+
+3. show updated round details for zone Z-01
+
+Tools expected
+
+login
+create_trip
+get_round_details
+
+
+6. Management Analytics Scenario
+
+ใช้ resource tools
+
+The park director wants a quick overview.
+
+Steps:
+1. login as manager S-001
+2. show today's visitor report
+3. show dinosaur food inventory across zones
+4. show the list of zones and their rounds
+
+Tools expected
+
+login
+daily_report
+food_report
+zones_report
+
+
+
+7. Full Park Operation Scenario (Stress Test)
+
+Prompt นี้ เรียกเกือบทุก tool
+
+Simulate a full operational workflow in the dinosaur park.
+
+Phase 1 — ticket booking
+1. login as ticket staff S-004
+2. list all actors
+3. help visitor Bob (phone 0822222222) book 2 seats
+
+booking details:
+zone Z-01
+round R-0900
+trip TR-001
+
+4. issue a food coupon to the member
+5. logout
+
+Phase 2 — ranger operation
+6. login as ranger S-002
+7. request food refill for zone Z-02
+8. logout
+
+Phase 3 — management approval
+9. login as manager S-001
+10. approve the food refill
+11. check today's visitor report
+12. logout
+
+Phase 4 — park entry
+13. login as ticket staff S-004
+14. check in the visitor tickets
+
+Tools expected
+
+list_actors
+login
+check_seat_availability
+create_booking
+add_coupon_to_member
+request_food_refill
+approve_food_refill
+daily_report
+check_in_ticket
+logout
