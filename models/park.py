@@ -134,7 +134,16 @@ class Park:
                 cage.add_food(dino.food_source)
         return {"status": "success", "message": "Refill Success"}
 
-    def book_trip(self, user_id: str, zone_id: str, round_id: str, trip_id: str, seats: int, base_price: float) -> dict:
+    def book_trip(
+        self,
+        user_id: str,
+        zone_id: str,
+        round_id: str,
+        trip_id: str,
+        seats: int,
+        base_price: float,
+        wants_food_ticket: bool = False,
+    ) -> dict:
         from .booking import Booking
 
         if seats < 1 or seats > 10:
@@ -160,7 +169,9 @@ class Park:
         if user is None:
             return {"status": "error", "message": "User not found"}
 
-        booking = Booking(user, round_obj, trip, seats, base_price)
+        booking = Booking(user, round_obj, trip, seats, base_price, wants_food_ticket=wants_food_ticket)
+        if wants_food_ticket:
+            user.set_had_food_ticket(True)
         self.add_booking(booking)
         return {"status": "success", "booking_id": booking.booking_id, "booking": booking}
 
@@ -232,6 +243,7 @@ class Park:
         expiry = datetime.now() + timedelta(days=30)
         new_coupon = Coupon.create("FOOD_COUPON", 50.0, expiry)
         member.add_coupon(new_coupon)
+        member.set_had_food_ticket(True)
         return {"status": "success", "coupon": new_coupon}
 
     def check_available_seats(self, zone_id: str, round_id: str) -> dict:

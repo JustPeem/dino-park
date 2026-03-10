@@ -140,6 +140,7 @@ MCP exposes all 8 use cases as **AI-callable tools** for Claude Desktop, Cursor,
 | `add_coupon_to_member`     | UC8     | Issue coupon            |
 
 > หมายเหตุ: เครื่องมือ MCP ถูกบังคับให้ `login` ก่อนใช้งาน โดยใช้ `actor_id` (member_id/staff_id) และแบ่ง actor เป็น `member`, `ticket_staff`, `manager`, และ `ranger`
+
 ### MCP Resources
 | URI              | Description                       |
 |------------------|-----------------------------------|
@@ -245,6 +246,7 @@ dev           ← integration branch (PR target)
 | เด็ก (Child, ≤12 ปี)      | 300 บาท |
 | ผู้สูงอายุ (Senior, ≥60 ปี) | 250 บาท  |
 | Feeding Ticket (เสริม)   | 150 บาท |
+| Feeding Ticket (เสริม)   | 67 บาท  |
 
 |      ส่วนลด      |                เงื่อนไข                 |
 |-----------------|---------------------------------------|

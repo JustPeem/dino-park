@@ -17,6 +17,7 @@ class User(ABC):
         self.__phone_number = phone_number
         self.__user_type = user_type
         self.__user_id = user_id
+        self.__had_food_ticket = False
 
     @property
     def user_id(self) -> str:
@@ -33,6 +34,13 @@ class User(ABC):
     @property
     def user_type(self) -> str:
         return self.__user_type
+
+    @property
+    def had_food_ticket(self) -> bool:
+        return self.__had_food_ticket
+
+    def set_had_food_ticket(self, value: bool) -> None:
+        self.__had_food_ticket = value
 
     @abstractmethod
     def __repr__(self):
