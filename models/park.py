@@ -3,7 +3,12 @@ from __future__ import annotations
 from datetime import date, datetime, timedelta
 from typing import TYPE_CHECKING, Optional
 
+from .coupon import Coupon
 from .payment import CashPayment, QRPayment
+
+
+NEW_MEMBER_COUPON_CODE = "NEW15"
+NEW_MEMBER_COUPON_DISCOUNT = 15.0
 
 if TYPE_CHECKING:
     from .zone import Zone
@@ -54,6 +59,18 @@ class Park:
 
     def add_member(self, member: "Member") -> None:
         self.__members.append(member)
+
+    def register_member(self, name: str, phone_number: str) -> "Member":
+        from .users import Member
+
+        existing_member = self.find_member_by_phone_number(phone_number)
+        if existing_member is not None:
+            return existing_member
+
+        member = Member(name, phone_number)
+        member.add_coupon(Coupon.create(NEW_MEMBER_COUPON_CODE, NEW_MEMBER_COUPON_DISCOUNT))
+        self.add_member(member)
+        return member
     
     def list_members(self) -> list["Member"]:
         return list(self.__members)

@@ -14,7 +14,6 @@ app = FastAPI(title="Dino Park API", version="1.1.0")
 SEED_PATH = Path(__file__).resolve().parents[1] / "data" / "sample_seed_data.json"
 park = build_park_from_seed(SEED_PATH)
 
-
 class CreateBookingRequest(BaseModel):
     name: str
     phone_number: str

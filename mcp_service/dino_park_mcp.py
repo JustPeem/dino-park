@@ -192,7 +192,7 @@ def check_seat_availability(zone_id: str, round_id: str) -> dict:
 
     Typical Workflow:
         for member:
-        login -> check_seat_availability -> create_booking 
+        login ->get_round_detail -> check_seat_availability -> create_booking 
     """
     denied = _require_login(ROLE_MEMBER, ROLE_TICKET_STAFF, ROLE_MANAGER)
     if denied is not None:

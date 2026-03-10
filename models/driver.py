@@ -17,10 +17,6 @@ class Driver(Staff):
     def license_id(self) -> str:
         return self.__license_id
 
-    @property
-    def staff_id(self) -> str:
-        return self.__staff_id
-
     def login(self) -> bool:
         return True
 
