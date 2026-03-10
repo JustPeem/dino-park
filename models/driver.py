@@ -2,25 +2,20 @@ from __future__ import annotations
 
 from datetime import datetime
 from typing import TYPE_CHECKING
-
+from .staff import Staff
 if TYPE_CHECKING:
     from .trip import Trip
 
 
-class Driver:
+class Driver(Staff):
     def __init__(self, staff_id: str, name: str, license_id: str):
-        self.__staff_id = staff_id
-        self.__name = name
+        super().__init__(staff_id, name)
         self.__license_id = license_id
         self.__trips: list["Trip"] = []
 
     @property
     def license_id(self) -> str:
         return self.__license_id
-
-    @property
-    def staff_id(self) -> str:
-        return self.__staff_id
 
     def login(self) -> bool:
         return True

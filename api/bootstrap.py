@@ -27,7 +27,7 @@ def build_park_from_seed(seed_path: str | Path) -> Park:
     payload = json.loads(path.read_text(encoding="utf-8"))
 
     park = Park("Dino Park")
-
+    
     zone_map: dict[str, Zone] = {}
     for zone_row in payload.get("zones", []):
         zone = Zone(zone_row["zone_id"], zone_row.get("name", zone_row["zone_id"]))
