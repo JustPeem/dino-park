@@ -56,9 +56,6 @@ def check_booking_availability(zone_id: str, round_id: str):
 def create_booking(payload: CreateBookingRequest):
     member = park.find_member_by_phone_number(payload.phone_number)
     print(f"Member found: {member}")
-    if member is None:
-        member = Member(payload.name, payload.phone_number)
-        park.add_member(member)
 
     zone = park.get_zone(payload.zone_id)
     print(f"Zone found: {zone}")
@@ -72,6 +69,9 @@ def create_booking(payload: CreateBookingRequest):
 
     if round_obj.get_trip(payload.trip_id) is None:
         raise HTTPException(status_code=404, detail="Trip not found")
+    
+    if member is None:
+        member = park.register_member(payload.name, payload.phone_number)
 
     booking_result = park.book_trip(
         user_id=member.user_id,
