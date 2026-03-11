@@ -210,6 +210,7 @@ def create_booking(
     seats: int,
     coupon_code: str | None = None,
     payment_channel: str = "cash",
+    wants_food_ticket: bool = False,
 ) -> dict:
     """
     Create a booking for a Dino Park tour trip.
@@ -225,6 +226,7 @@ def create_booking(
         seats: Number of seats to book.
         coupon_code: Optional discount coupon.
         payment_channel: Payment method (default: cash).
+        wants_food_ticket: Add feeding ticket for all booked seats (+67 THB per seat).
 
     Returns:
         dict:
@@ -266,7 +268,15 @@ def create_booking(
     if trip is None:
         return {"status": "error", "message": "Trip not found"}
 
-    booking_result = park.book_trip(member.user_id, zone_id, round_id, trip_id, seats, round_obj.price_per_seat)
+    booking_result = park.book_trip(
+        member.user_id,
+        zone_id,
+        round_id,
+        trip_id,
+        seats,
+        round_obj.price_per_seat,
+        wants_food_ticket=wants_food_ticket,
+    )
     if booking_result["status"] != "success":
         return booking_result
 
@@ -283,6 +293,8 @@ def create_booking(
         "status": "success",
         "booking_id": booking_result["booking_id"],
         "ticket_ids": [ticket.ticket_id for ticket in payment_result["tickets"]],
+        "wants_food_ticket": booking_result["booking"].wants_food_ticket,
+        "total_price": booking_result["booking"].total_price,
     }
 
 
@@ -417,6 +429,43 @@ def create_trip(zone_id: str, vehicle_id: str, driver_license_id: str, start_tim
     )
     if result.get("status") == "success":
         return {"status": "success", "trip_id": result["trip"].trip_id}
+    return result
+
+@mcp.tool()
+def create_new_round(zone_id: str, start_time: str, end_time: str, price_per_seat: float) -> dict:
+    """
+    Create a new round schedule for a specific zone.
+
+    The manager defines the round time and ticket price.
+
+    Args:
+        zone_id: Zone identifier.
+        start_time: Round start time (ISO format).
+        end_time: Round end time (ISO format).
+        price_per_seat: Ticket price per seat.
+    Returns:
+        dict:
+        {
+            "status": "success",
+            "round_id": str
+        }
+    Access:
+        manager
+    """
+    denied = _require_login(ROLE_MANAGER)
+    if denied is not None:
+        return denied
+
+    from datetime import datetime
+
+    result = park.create_round(
+        zone_id=zone_id,
+        start_time=datetime.fromisoformat(start_time),
+        end_time=datetime.fromisoformat(end_time),
+        price_per_seat=price_per_seat,
+    )
+    if result.get("status") == "success":
+        return {"status": "success", "round_id": result["round"].round_id}
     return result
 
 

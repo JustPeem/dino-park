@@ -19,6 +19,12 @@
     {
       "staff_id": "S-004",
       "name": "Mint",
+      "role": "driver",
+      "license_id": "DRV-7799"
+    },
+    {
+      "staff_id": "S-005",
+      "name": "Peerapol",
       "role": "ticket_staff"
     }
   ],
@@ -32,6 +38,11 @@
       "vehicle_id": "V-002",
       "name": "Safari Truck 2",
       "capacity": 40
+    },
+    {
+      "vehicle_id": "V-003",
+      "name": "Safari Truck 3",
+      "capacity": 30
     }
   ],
   "zones": [
