@@ -202,7 +202,8 @@ pytest tests/test_api/ -v
 # 9. Run with coverage
 pytest tests/ --cov=. --cov-report=term-missing
 ```
-
+docker pull didas07/dino-park-mcp
+docker run didas07/dino-park-mcp
 ---
 
 ## 🌿 Git Branching Strategy
