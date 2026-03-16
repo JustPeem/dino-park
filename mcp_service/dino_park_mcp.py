@@ -521,7 +521,7 @@ def create_trip(zone_id: str, vehicle_id: str, driver_license_id: str, start_tim
     Args:
         zone_id: Zone identifier.
         vehicle_id: Vehicle identifier.
-        driver_license_id: Ranger/driver identifier.
+        driver_license_id(not staff_id): Ranger/driver identifier.
         start_time: Trip start time (ISO format).
         end_time: Trip end time (ISO format).
 
@@ -554,43 +554,83 @@ def create_trip(zone_id: str, vehicle_id: str, driver_license_id: str, start_tim
 
 
 @mcp.tool()
-def create_new_round(zone_id: str, start_time: str, end_time: str, price_per_seat: float) -> dict:
+def create_new_round(
+    zone_id: str,
+    start_time: str,
+    end_time: str,
+    price_per_seat: float = None,  # Optional parameter for future use
+) -> dict:
     """
     Create a new round schedule for a specific zone.
-
-    The manager defines the round time and ticket price.
-
+ 
+    The manager defines the round time and capacity.
+ 
     Args:
         zone_id: Zone identifier.
-        start_time: Round start time (ISO format).
-        end_time: Round end time (ISO format).
-        price_per_seat: Ticket price per seat.
-
+        start_time: Round start time (ISO format, e.g., "2025-03-20T10:00:00").
+        end_time: Round end time (ISO format, e.g., "2025-03-20T12:00:00").
+        price_per_seat: Optional ticket price per seat (for future use).
+ 
     Returns:
         dict:
         {
             "status": "success",
             "round_id": str
         }
-
+        or
+        {
+            "status": "error",
+            "message": str
+        }
+ 
     Access:
         manager
     """
     denied = _require_login(ROLE_MANAGER)
     if denied is not None:
         return denied
-
-    from datetime import datetime
-
-    result = park.create_round(
-        zone_id=zone_id,
-        start_time=datetime.fromisoformat(start_time),
-        end_time=datetime.fromisoformat(end_time),
-        price_per_seat=price_per_seat,
-    )
-    if result.get("status") == "success":
-        return {"status": "success", "round_id": result["round"].round_id}
-    return result
+ 
+    # Validate zone exists
+    zone = park.get_zone(zone_id)
+    if zone is None:
+        return {"status": "error", "message": "Zone not found"}
+ 
+ 
+    # Validate price if provided
+    if price_per_seat is not None and price_per_seat <= 0:
+        return {"status": "error", "message": "Price per seat must be greater than 0"}
+ 
+    try:
+        from datetime import datetime
+        
+        # Parse ISO format times
+        start_dt = datetime.fromisoformat(start_time)
+        end_dt = datetime.fromisoformat(end_time)
+        
+        # Validate times
+        if start_dt >= end_dt:
+            return {"status": "error", "message": "Start time must be before end time"}
+        
+        # Extract date from start_time
+        round_date = start_dt.date()
+        
+        # Call the create_round method with correct parameters
+        result = park.create_round(
+            zone_id=zone_id,
+            round_date=round_date,
+            start_time=start_dt,
+            end_time=end_dt,
+        )
+        
+        if result.get("status") == "success":
+            return {"status": "success", "round_id": result["round_id"]}
+        
+        return result
+        
+    except ValueError as e:
+        return {"status": "error", "message": f"Invalid datetime format: {str(e)}"}
+    except Exception as e:
+        return {"status": "error", "message": f"Failed to create round: {str(e)}"}
 
 
 @mcp.tool()
