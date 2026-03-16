@@ -157,7 +157,6 @@ def login(actor_type: str, actor_id: str) -> dict:
     return {"status": "success", "session": current_session}
 
 
-
 @mcp.tool()
 def logout() -> dict:
     """
@@ -192,7 +191,7 @@ def check_seat_availability(zone_id: str, round_id: str) -> dict:
 
     Typical Workflow:
         for member:
-        login ->get_round_detail -> check_seat_availability -> create_booking 
+        login -> get_round_details -> check_seat_availability -> create_booking -> process_payment
     """
     denied = _require_login(ROLE_MEMBER, ROLE_TICKET_STAFF, ROLE_MANAGER)
     if denied is not None:
@@ -208,14 +207,12 @@ def create_booking(
     round_id: str,
     trip_id: str,
     seats: int,
-    coupon_code: str | None = None,
-    payment_channel: str = "cash",
     wants_food_ticket: bool = False,
 ) -> dict:
     """
-    Create a booking for a Dino Park tour trip.
+    Reserve seats for a Dino Park tour trip (without payment).
 
-    A booking reserves seats for a specific trip and processes payment.
+    Creates a pending booking that must be confirmed via `process_payment`.
 
     Args:
         name: Visitor name.
@@ -224,8 +221,6 @@ def create_booking(
         round_id: Round identifier.
         trip_id: Trip identifier.
         seats: Number of seats to book.
-        coupon_code: Optional discount coupon.
-        payment_channel: Payment method (default: cash).
         wants_food_ticket: Add feeding ticket for all booked seats (+67 THB per seat).
 
     Returns:
@@ -233,7 +228,8 @@ def create_booking(
         {
             "status": "success",
             "booking_id": str,
-            "ticket_ids": list[str]
+            "total_price": float,
+            "wants_food_ticket": bool
         }
 
     Access:
@@ -241,9 +237,8 @@ def create_booking(
         ticket_staff
 
     Workflow:
-        check_seat_availability -> create_booking -> receive tickets
+        check_seat_availability -> create_booking -> process_payment
     """
-     
     denied = _require_login(ROLE_MEMBER, ROLE_TICKET_STAFF)
     if denied is not None:
         return denied
@@ -280,8 +275,70 @@ def create_booking(
     if booking_result["status"] != "success":
         return booking_result
 
+    return {
+        "status": "success",
+        "booking_id": booking_result["booking_id"],
+        "total_price": booking_result["booking"].total_price,
+        "wants_food_ticket": booking_result["booking"].wants_food_ticket,
+    }
+
+
+@mcp.tool()
+def process_payment(
+    booking_id: str,
+    coupon_code: str | None = None,
+    payment_channel: str = "cash",
+) -> dict:
+    """
+    Process payment for an existing booking and issue tickets.
+
+    Must be called after `create_booking` to confirm the reservation.
+
+    Args:
+        booking_id: Booking identifier returned from `create_booking`.
+        coupon_code: Optional discount coupon code.
+        payment_channel: Payment method (default: cash).
+
+    Returns:
+        dict:
+        {
+            "status": "success",
+            "booking_id": str,
+            "ticket_ids": list[str],
+            "total_price": float
+        }
+
+    Access:
+        member
+        ticket_staff
+
+    Workflow:
+        create_booking -> process_payment -> receive tickets
+    """
+    denied = _require_login(ROLE_MEMBER, ROLE_TICKET_STAFF)
+    if denied is not None:
+        return denied
+
+    session = current_session or {}
+
+    # Resolve phone number for payment
+    if session.get("actor_type") == ROLE_MEMBER:
+        member = park.get_user_by_id(session.get("actor_id", ""))
+        if member is None:
+            return _deny("Member session invalid")
+        phone_number = member.phone_number
+    else:
+        # For ticket_staff, look up the booking to find the member's phone
+        booking = park.get_booking(booking_id)
+        if booking is None:
+            return {"status": "error", "message": "Booking not found"}
+        member = park.get_user_by_id(booking.user_id)
+        if member is None:
+            return {"status": "error", "message": "Member not found for booking"}
+        phone_number = member.phone_number
+
     payment_result = park.process_payment(
-        booking_id=booking_result["booking_id"],
+        booking_id=booking_id,
         phone_number=phone_number,
         coupon_code=coupon_code,
         payment_channel=payment_channel,
@@ -291,10 +348,9 @@ def create_booking(
 
     return {
         "status": "success",
-        "booking_id": booking_result["booking_id"],
+        "booking_id": booking_id,
         "ticket_ids": [ticket.ticket_id for ticket in payment_result["tickets"]],
-        "wants_food_ticket": booking_result["booking"].wants_food_ticket,
-        "total_price": booking_result["booking"].total_price,
+        "total_price": payment_result.get("total_price"),
     }
 
 
@@ -318,6 +374,7 @@ def cancel_booking(booking_id: str) -> dict:
     if denied is not None:
         return denied
     return park.cancel_booking(booking_id)
+
 
 @mcp.tool()
 def get_round_details(zone_id: str) -> dict:
@@ -368,6 +425,7 @@ def get_round_details(zone_id: str) -> dict:
         ],
     }
 
+
 @mcp.tool()
 def check_in_ticket(ticket_id: str) -> dict:
     """
@@ -388,6 +446,69 @@ def check_in_ticket(ticket_id: str) -> dict:
     if denied is not None:
         return denied
     return park.check_in(ticket_id)
+
+
+@mcp.tool()
+def create_food_ticket_payment(
+    member_id: str,
+    zone_id: str,
+    quantity: int = 1,
+    payment_channel: str = "cash",
+) -> dict:
+    """
+    Purchase food feeding ticket(s) for a park member.
+
+    Ticket staff can sell additional food tickets to visitors
+    who want to feed the dinosaurs in a specific zone.
+
+    Args:
+        member_id: Member identifier.
+        zone_id: Zone identifier where feeding will take place.
+        quantity: Number of food tickets to purchase (default: 1).
+        payment_channel: Payment method (default: cash).
+
+    Returns:
+        dict:
+        {
+            "status": "success",
+            "food_ticket_ids": list[str],
+            "total_price": float,
+            "zone_id": str
+        }
+
+    Access:
+        ticket_staff
+
+    Workflow:
+        login (ticket_staff) -> create_food_ticket_payment -> hand tickets to visitor
+    """
+    denied = _require_login(ROLE_TICKET_STAFF)
+    if denied is not None:
+        return denied
+
+    member = park.get_user_by_id(member_id)
+    if member is None:
+        return _deny("Member not found")
+
+    zone = park.get_zone(zone_id)
+    if zone is None:
+        return {"status": "error", "message": "Zone not found"}
+
+    result = park.purchase_food_tickets(
+        member_id=member_id,
+        zone_id=zone_id,
+        quantity=quantity,
+        payment_channel=payment_channel,
+    )
+    if result.get("status") != "success":
+        return result
+
+    return {
+        "status": "success",
+        "food_ticket_ids": result["food_ticket_ids"],
+        "total_price": result["total_price"],
+        "zone_id": zone_id,
+    }
 
 
 @mcp.tool()
@@ -431,6 +552,7 @@ def create_trip(zone_id: str, vehicle_id: str, driver_license_id: str, start_tim
         return {"status": "success", "trip_id": result["trip"].trip_id}
     return result
 
+
 @mcp.tool()
 def create_new_round(zone_id: str, start_time: str, end_time: str, price_per_seat: float) -> dict:
     """
@@ -443,12 +565,14 @@ def create_new_round(zone_id: str, start_time: str, end_time: str, price_per_sea
         start_time: Round start time (ISO format).
         end_time: Round end time (ISO format).
         price_per_seat: Ticket price per seat.
+
     Returns:
         dict:
         {
             "status": "success",
             "round_id": str
         }
+
     Access:
         manager
     """
@@ -511,41 +635,6 @@ def approve_food_refill(zone_id: str) -> dict:
     if denied is not None:
         return denied
     return park.request_food_refill(zone_id)
-
-
-@mcp.tool()
-def add_coupon_to_member(member_id: str) -> dict:
-    """
-    Issue a food discount coupon to a park member.
-
-    Usually used as a promotion or compensation.
-
-    Args:
-        member_id: Member identifier.
-
-    Returns:
-        dict:
-        {
-            "status": "success",
-            "coupon_code": str,
-            "discount": float
-        }
-
-    Access:
-        ticket_staff
-    """
-    denied = _require_login(ROLE_TICKET_STAFF)
-    if denied is not None:
-        return denied
-
-    result = park.issue_food_coupon(member_id)
-    if result.get("status") != "success":
-        return result
-    return {
-        "status": "success",
-        "coupon_code": result["coupon"].coupon_code,
-        "discount": result["coupon"].discount_amount,
-    }
 
 
 @mcp.resource("report://daily")
