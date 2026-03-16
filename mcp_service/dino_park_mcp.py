@@ -580,17 +580,42 @@ def create_new_round(zone_id: str, start_time: str, end_time: str, price_per_sea
     if denied is not None:
         return denied
 
-    from datetime import datetime
+    # Validate zone exists
+    zone = park.get_zone(zone_id)
+    if zone is None:
+        return {"status": "error", "message": "Zone not found"}
 
-    result = park.create_round(
-        zone_id=zone_id,
-        start_time=datetime.fromisoformat(start_time),
-        end_time=datetime.fromisoformat(end_time),
-        price_per_seat=price_per_seat,
-    )
-    if result.get("status") == "success":
-        return {"status": "success", "round_id": result["round"].round_id}
-    return result
+    # Validate price
+    if price_per_seat <= 0:
+        return {"status": "error", "message": "Price per seat must be greater than 0"}
+
+    try:
+        from datetime import datetime
+        
+        # Parse ISO format times
+        start_dt = datetime.fromisoformat(start_time)
+        end_dt = datetime.fromisoformat(end_time)
+        
+        # Validate times
+        if start_dt >= end_dt:
+            return {"status": "error", "message": "Start time must be before end time"}
+        
+        result = park.create_round(
+            zone_id=zone_id,
+            start_time=start_dt,
+            end_time=end_dt,
+            price_per_seat=price_per_seat,
+        )
+        
+        if result.get("status") == "success":
+            return {"status": "success", "round_id": result["round"].round_id}
+        
+        return result
+        
+    except ValueError as e:
+        return {"status": "error", "message": f"Invalid datetime format: {str(e)}"}
+    except Exception as e:
+        return {"status": "error", "message": f"Failed to create round: {str(e)}"}
 
 
 @mcp.tool()
