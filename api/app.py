@@ -23,6 +23,7 @@ class CreateBookingRequest(BaseModel):
     seats: int = Field(ge=1, le=10)
     coupon_code: str | None = None
     payment_channel: str = "cash"
+    wants_food_ticket: bool = False
 
 
 class CheckinRequest(BaseModel):
@@ -48,13 +49,7 @@ class FoodRefillRequest(BaseModel):
 @app.get("/bookings/availability")
 def check_booking_availability(zone_id: str, round_id: str):
     result = park.check_available_seats(zone_id, round_id)
-    if result["status"] != "success":
-        raise HTTPException(status_code=400, detail=result["message"])
-    return result
 
-@app.post("/bookings/")
-def create_booking(payload: CreateBookingRequest):
-    member = park.find_member_by_phone_number(payload.phone_number)
     print(f"Member found: {member}")
 
     zone = park.get_zone(payload.zone_id)
@@ -80,6 +75,7 @@ def create_booking(payload: CreateBookingRequest):
         trip_id=payload.trip_id,
         seats=payload.seats,
         base_price=round_obj.price_per_seat,
+        wants_food_ticket=payload.wants_food_ticket,
     )
     if booking_result["status"] != "success":
         raise HTTPException(status_code=400, detail=booking_result["message"])
@@ -97,6 +93,8 @@ def create_booking(payload: CreateBookingRequest):
         "status": "success",
         "booking_id": booking_result["booking_id"],
         "ticket_ids": [ticket.ticket_id for ticket in payment_result["tickets"]],
+        "wants_food_ticket": booking_result["booking"].wants_food_ticket,
+        "total_price": booking_result["booking"].total_price,
     }
 
 
@@ -111,6 +109,7 @@ def get_booking_detail(booking_id: str):
         "status": booking.status,
         "seats": booking.seats,
         "total_price": booking.total_price,
+        "wants_food_ticket": booking.wants_food_ticket,
         "ticket_ids": [ticket.ticket_id for ticket in booking.tickets],
     }
 

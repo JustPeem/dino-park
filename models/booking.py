@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import TYPE_CHECKING
 
 from utils.id_generator import id_gen
@@ -11,9 +11,18 @@ if TYPE_CHECKING:
     from .trip import Trip
     from .payment import PaymentMethod
 
+FEEDING_TICKET_ADDON_PRICE = 67.0
 
 class Booking:
-    def __init__(self, user: "User", round_ref: "Round", trip: "Trip", seats: int, base_price: float):
+    def __init__(
+        self,
+        user: "User",
+        round_ref: "Round",
+        trip: "Trip",
+        seats: int,
+        base_price: float,
+        wants_food_ticket: bool = False,
+    ):
         self.__booking_id = id_gen.booking_id(round_ref.date)
         self.__booking_date = datetime.now()
         self.__user = user
@@ -21,7 +30,8 @@ class Booking:
         self.__trip = trip
         self.__seats = seats
         self.__base_price = base_price
-        self.__total_price = base_price * seats
+        self.__wants_food_ticket = wants_food_ticket
+        self.__total_price = (base_price * seats) + (FEEDING_TICKET_ADDON_PRICE * seats if wants_food_ticket else 0.0)
         self.__status = "PENDING"
         self.__tickets = []
         self.__payments = []
@@ -58,8 +68,14 @@ class Booking:
     def seats(self):
         return self.__seats
 
+    @property
+    def wants_food_ticket(self) -> bool:
+        return self.__wants_food_ticket
+    
     def calculate_final_price(self, member_discount_percent: float = 0.0, coupon_discount: float = 0.0) -> float:
-        subtotal = self.__base_price * self.__seats
+        subtotal = (self.__base_price * self.__seats) + (
+            FEEDING_TICKET_ADDON_PRICE * self.__seats if self.__wants_food_ticket else 0.0
+        )
         member_discount = subtotal * (member_discount_percent / 100)
         group_discount = subtotal * 0.05 if self.__seats >= 10 else 0.0
         self.__total_price = max(0.0, subtotal - member_discount - group_discount - coupon_discount)
