@@ -245,7 +245,6 @@ dev           ← integration branch (PR target)
 | ผู้ใหญ่ (Adult)           | 500 บาท |
 | เด็ก (Child, ≤12 ปี)      | 300 บาท |
 | ผู้สูงอายุ (Senior, ≥60 ปี) | 250 บาท  |
-| Feeding Ticket (เสริม)   | 150 บาท |
 | Feeding Ticket (เสริม)   | 67 บาท  |
 
 |      ส่วนลด      |                เงื่อนไข                 |
