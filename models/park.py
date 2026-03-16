@@ -99,7 +99,6 @@ class Park:
         round_date: date,
         start_time: datetime,
         end_time: datetime,
-        capacity: int,
         round_id: str | None = None,
     ) -> dict:
         """
@@ -110,19 +109,20 @@ class Park:
             round_date: Date of the round
             start_time: Start time of the round
             end_time: End time of the round
-            capacity: Total capacity/seats for the round
             round_id: Optional custom round ID
             
         Returns:
             dict with status and round details or error message
         """
+        from .round import Round
+        
         zone = self.get_zone(zone_id)
         if zone is None:
             return {"status": "error", "message": "Zone not found"}
         
-        round_obj = zone.create_round(round_date, start_time, end_time, capacity, round_id)
-        if round_obj is None:
-            return {"status": "error", "message": "Failed to create round"}
+        # Create the Round object directly, matching Zone.add_round() pattern
+        round_obj = Round(round_date, start_time, end_time, round_id)
+        zone.add_round(round_obj)
         
         return {"status": "success", "round_id": round_obj.round_id, "round": round_obj}
 
