@@ -13,6 +13,7 @@ TICKET_PRICES: dict[str, float] = {
     "child": 300.0,
     "senior": 250.0,
     "feeding": 150.0,
+    "feeding": 67.0,
 }
 
 
