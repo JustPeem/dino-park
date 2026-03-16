@@ -93,6 +93,17 @@ class Park:
     def get_daily_visitor_count(self, query_date: date) -> int:
         return sum(len(b.tickets) for b in self.__bookings if b.booking_date.date() == query_date and b.status == "CONFIRMED")
 
+    def purchase_food_ticket(self, user_id: str) -> dict:
+        user = self.get_user_by_id(user_id)
+        if user is None:
+            return {"status": "error", "message": "User not found"}
+
+        if user.had_food_ticket:
+            return {"status": "error", "message": "Already has food ticket"}
+
+        user.set_had_food_ticket(True)
+        return {"status": "success", "message": "Food ticket purchased"}
+    
     def create_round(
         self,
         zone_id: str,
